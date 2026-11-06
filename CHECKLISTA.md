@@ -1,0 +1,22 @@
+# Checklista stl-podglad
+
+- [x] Okno WinForms + OpenGL 1.1 (P/Invoke), bez zewnętrznych bibliotek
+- [x] build.cmd (csc, C# 5), SetProcessDPIAware
+- [x] Rysowanie tylko na zdarzenia, bez timerów i pętli
+- [x] Wczytywanie strumieniowe do listy wyświetlania, bez tablic w pamięci zarządzanej
+- [x] Binarny i ASCII STL, wyliczanie normalnych przy zerowych
+- [x] Uszkodzony / pusty plik: tytuł "błąd odczytu", pusty widok
+- [x] Zwolnienie listy, GC.Collect i przycięcie working set przy zmianie pliku
+- [x] Plik z argumentu wiersza poleceń i przeciągnij-upuść
+- [x] Lewo / Prawo: poprzedni / następny plik w folderze (naturalne sortowanie, zapętlenie)
+- [x] D: przełączanie 2D / 3D
+- [x] 2D: rzut ortogonalny, stały kąt, zoom do kursora, przesuwanie
+- [x] 3D: perspektywa, obrót lewym, przesuwanie prawym / środkowym, kółko zoom
+- [x] Reset widoku przy zmianie pliku i przy powrocie 3D -> 2D
+- [x] Motyw jasny / ciemny z ustawień Windows (rejestr, raz przy starcie)
+- [x] Ciemny pasek tytułu w trybie ciemnym (DwmSetWindowAttribute)
+- [x] Tytuł: nazwa, indeks/liczba, tryb; brak menu, pasków i napisów w oknie
+- [x] Esc zamyka okno
+- [x] Brak innych klawiszy niż Lewo, Prawo, D, Esc
+- [x] Pliki testowe (test\generuj.py)
+- [ ] Test ręczny w oknie (render, mysz, przeciąganie) - nie wykonano w sesji agenta
