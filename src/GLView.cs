@@ -263,6 +263,7 @@ namespace StlPodglad
             Native.glClear(Native.GL_COLOR_BUFFER_BIT | Native.GL_DEPTH_BUFFER_BIT);
 
             if (vertCount != 0) DrawModel(w, h);
+            DrawIndicator(w, h);
             Native.SwapBuffers(hdc);
             if (trimPending)
             {
@@ -358,6 +359,82 @@ namespace StlPodglad
             if (dark) Native.glColor3f(0.62f, 0.68f, 0.76f);
             else Native.glColor3f(0.36f, 0.43f, 0.53f);
             DrawBuffer();
+        }
+
+        // Wskaznik trybu w lewym gornym rogu ("2D"/"3D"), rysowany prostokatami w pikselach okna.
+        static void Box(double x, double y, double w, double h)
+        {
+            Native.glRectf((float)x, (float)y, (float)(x + w), (float)(y + h));
+        }
+
+        // seg: bity 0 gora, 1 prawa gorna, 2 prawa dolna, 3 dol, 4 lewa dolna, 5 lewa gorna, 6 srodek
+        static void Digit(int seg, double x, double y, double gw, double gh, double t)
+        {
+            double mid = y + (gh - t) / 2;
+            if ((seg & 1) != 0) Box(x, y, gw, t);
+            if ((seg & 2) != 0) Box(x + gw - t, y, t, gh / 2 + t / 2);
+            if ((seg & 4) != 0) Box(x + gw - t, y + gh / 2 - t / 2, t, gh / 2 + t / 2);
+            if ((seg & 8) != 0) Box(x, y + gh - t, gw, t);
+            if ((seg & 16) != 0) Box(x, y + gh / 2 - t / 2, t, gh / 2 + t / 2);
+            if ((seg & 32) != 0) Box(x, y, t, gh / 2 + t / 2);
+            if ((seg & 64) != 0) Box(x, mid, gw, t);
+        }
+
+        static void LetterD(double x, double y, double gw, double gh, double t)
+        {
+            Box(x, y, t, gh);
+            Box(x, y, gw - t, t);
+            Box(x, y + gh - t, gw - t, t);
+            Box(x + gw - t, y + t, t, gh - 2 * t);
+        }
+
+        void DrawIndicator(int w, int h)
+        {
+            double k = 1.0;
+            using (Graphics g = CreateGraphics()) k = g.DpiX / 96.0;
+            double x0 = Math.Round(10 * k), y0 = Math.Round(10 * k);
+            double bw = Math.Round(34 * k), bh = Math.Round(22 * k);
+            double t = Math.Max(2, Math.Round(1.6 * k));
+            double bt = Math.Max(1, Math.Round(1.5 * k));
+            double gw = Math.Round(8 * k), gh = Math.Round(12 * k), gap = Math.Round(3 * k);
+            double tx = x0 + Math.Round((bw - (2 * gw + gap)) / 2);
+            double ty = y0 + Math.Round((bh - gh) / 2);
+
+            Native.glPushAttrib(Native.GL_ENABLE_BIT | Native.GL_CURRENT_BIT);
+            Native.glDisable(Native.GL_LIGHTING);
+            Native.glDisable(Native.GL_DEPTH_TEST);
+            Native.glMatrixMode(Native.GL_PROJECTION);
+            Native.glPushMatrix();
+            Native.glLoadIdentity();
+            Native.glOrtho(0, w, h, 0, -1, 1);
+            Native.glMatrixMode(Native.GL_MODELVIEW);
+            Native.glPushMatrix();
+            Native.glLoadIdentity();
+
+            if (mode3D)
+            {
+                Native.glColor3f(0x3A / 255f, 0x6E / 255f, 0xA5 / 255f);
+                Box(x0, y0, bw, bh);
+                Native.glColor3f(1f, 1f, 1f);
+            }
+            else
+            {
+                float c = dark ? 0xD0 / 255f : 0x30 / 255f;
+                Native.glColor3f(c, c, c);
+                Box(x0, y0, bw, bt);
+                Box(x0, y0 + bh - bt, bw, bt);
+                Box(x0, y0, bt, bh);
+                Box(x0 + bw - bt, y0, bt, bh);
+            }
+            // 2: gora, prawa gorna, srodek, lewa dolna, dol; 3: gora, prawa gorna, srodek, prawa dolna, dol
+            Digit(mode3D ? (1 | 2 | 4 | 8 | 64) : (1 | 2 | 8 | 16 | 64), tx, ty, gw, gh, t);
+            LetterD(tx + gw + gap, ty, gw, gh, t);
+
+            Native.glPopMatrix();
+            Native.glMatrixMode(Native.GL_PROJECTION);
+            Native.glPopMatrix();
+            Native.glMatrixMode(Native.GL_MODELVIEW);
+            Native.glPopAttrib();
         }
 
         protected override void OnMouseDown(MouseEventArgs e)

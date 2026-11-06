@@ -46,6 +46,10 @@ Dwukrotnie kliknij `odinstaluj.cmd` (albo użyj instalatora z Releases): usuwa w
 
 Brak innych klawiszy.
 
+## Wskaźnik trybu
+
+Mały kwadrat w lewym górnym rogu pokazuje bieżący tryb: obrys "2D" albo wypełniony na niebiesko "3D". Tylko wyświetla, nie reaguje na mysz.
+
 ## Mysz
 
 - Kółko: zoom do kursora (w 2D i w 3D).

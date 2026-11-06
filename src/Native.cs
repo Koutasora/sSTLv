@@ -43,6 +43,8 @@ namespace StlPodglad
         public const int GL_COLOR_BUFFER_BIT = 0x4000;
         public const int GL_DEPTH_BUFFER_BIT = 0x0100;
         public const int GL_FLAT = 0x1D00;
+        public const int GL_ENABLE_BIT = 0x2000;
+        public const int GL_CURRENT_BIT = 0x1000;
         public const int GL_FLOAT = 0x1406;
         public const int GL_VERTEX_ARRAY = 0x8074;
         public const int GL_NORMAL_ARRAY = 0x8075;
@@ -66,6 +68,12 @@ namespace StlPodglad
         [DllImport(GL)] public static extern void glColorMaterial(int face, int mode);
         [DllImport(GL)] public static extern void glColor3f(float r, float g, float b);
         [DllImport(GL)] public static extern void glShadeModel(int mode);
+        [DllImport(GL)] public static extern void glDisable(int cap);
+        [DllImport(GL)] public static extern void glPushMatrix();
+        [DllImport(GL)] public static extern void glPopMatrix();
+        [DllImport(GL)] public static extern void glPushAttrib(int mask);
+        [DllImport(GL)] public static extern void glPopAttrib();
+        [DllImport(GL)] public static extern void glRectf(float x1, float y1, float x2, float y2);
         [DllImport(GL)] public static extern void glEnableClientState(int array);
         [DllImport(GL)] public static extern void glDisableClientState(int array);
         [DllImport(GL)] public static extern void glVertexPointer(int size, int type, int stride, IntPtr p);

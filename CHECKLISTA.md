@@ -30,6 +30,7 @@
 - [x] Wygląd: światła, kontrast na ciemnym tle
 
 ## Do sprawdzenia w działaniu
+- [ ] Wskaźnik trybu 2D/3D w lewym górnym rogu (także w pustym oknie, skalowanie z DPI, nie łapie myszy)
 - [x] sSTLv-instalator.exe: instalacja bez administratora, wpisy HKCU, wpis w Aplikacjach zainstalowanych, okno końcowe (LAB)
 - [x] Instalator: ponowna instalacja na istniejącej (LAB)
 - [ ] Instalator: odmowa gdy sSTLv działa
