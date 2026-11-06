@@ -27,8 +27,8 @@
 - [x] Wygląd: światła, kontrast na ciemnym tle
 
 ## Do sprawdzenia w działaniu
-- [ ] instaluj.cmd: kopia do %LOCALAPPDATA%, wpisy HKCU, "Otwórz za pomocą", Aplikacje domyślne
-- [ ] odinstaluj.cmd usuwa tylko własne wpisy i folder
+- [x] instaluj.cmd: kopia do %LOCALAPPDATA%, wpisy HKCU, wersja w komunikacie, strona sSTLv w Aplikacjach domyślnych (sprawdzone na LAB)
+- [x] odinstaluj.cmd usuwa tylko własne wpisy i folder (sprawdzone na LAB)
 - [ ] Jasny motyw (AppsUseLightTheme = 1)
 - [ ] Drag & drop pliku na okno
 - [ ] Plik nie-.stl z argumentu
