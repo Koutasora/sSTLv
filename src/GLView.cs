@@ -1,5 +1,6 @@
 using System;
 using System.Drawing;
+using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
 namespace StlPodglad
@@ -14,7 +15,20 @@ namespace StlPodglad
         IntPtr hdc = IntPtr.Zero;
         IntPtr hrc = IntPtr.Zero;
 
-        uint list;
+        // Model: bufor VBO (OpenGL 1.5) albo, gdy sterownik go nie ma, tablica po stronie klienta.
+        delegate void GenBuffersFn(int n, ref uint buffers);
+        delegate void BindBufferFn(int target, uint buffer);
+        delegate void BufferDataFn(int target, IntPtr size, IntPtr data, int usage);
+        delegate void DeleteBuffersFn(int n, ref uint buffers);
+        GenBuffersFn glGenBuffers;
+        BindBufferFn glBindBuffer;
+        BufferDataFn glBufferData;
+        DeleteBuffersFn glDeleteBuffers;
+
+        uint vbo;
+        int vertCount;
+        float[] cpuData;
+        GCHandle cpuPin;
         double cx, cy, cz;          // srodek bryly
         double hx, hy, hz;          // polowy wymiarow
         double radius;              // promien kuli opisanej
@@ -63,7 +77,7 @@ namespace StlPodglad
 
         public bool HasModel
         {
-            get { return list != 0; }
+            get { return vertCount != 0; }
         }
 
         public void ResetView()
@@ -80,17 +94,13 @@ namespace StlPodglad
         {
             if (hrc == IntPtr.Zero) return false;
             Native.wglMakeCurrent(hdc, hrc);
-            if (list != 0)
-            {
-                Native.glDeleteLists(list, 1);
-                list = 0;
-            }
+            ReleaseModel();
 
             bool ok = false;
             try
             {
                 StlModel m = StlLoader.Load(path);
-                list = m.List;
+                Upload(m);
                 cx = (m.MinX + m.MaxX) * 0.5; cy = (m.MinY + m.MaxY) * 0.5; cz = (m.MinZ + m.MaxZ) * 0.5;
                 hx = (m.MaxX - m.MinX) * 0.5; hy = (m.MaxY - m.MinY) * 0.5; hz = (m.MaxZ - m.MinZ) * 0.5;
                 radius = Math.Sqrt(hx * hx + hy * hy + hz * hz);
@@ -113,6 +123,72 @@ namespace StlPodglad
                 trimPending = true;
             }
             return ok;
+        }
+
+        void ReleaseModel()
+        {
+            if (vbo != 0)
+            {
+                glDeleteBuffers(1, ref vbo);
+                vbo = 0;
+            }
+            if (cpuPin.IsAllocated) cpuPin.Free();
+            cpuData = null;
+            vertCount = 0;
+        }
+
+        T Proc<T>(string name) where T : class
+        {
+            IntPtr p = Native.wglGetProcAddress(name);
+            if (p == IntPtr.Zero || (long)p == 1 || (long)p == 2 || (long)p == 3 || (long)p == -1) return null;
+            return (T)(object)Marshal.GetDelegateForFunctionPointer(p, typeof(T));
+        }
+
+        void LoadBufferFunctions()
+        {
+            glGenBuffers = Proc<GenBuffersFn>("glGenBuffers");
+            glBindBuffer = Proc<BindBufferFn>("glBindBuffer");
+            glBufferData = Proc<BufferDataFn>("glBufferData");
+            glDeleteBuffers = Proc<DeleteBuffersFn>("glDeleteBuffers");
+            if (glGenBuffers == null || glBindBuffer == null || glBufferData == null || glDeleteBuffers == null)
+                glGenBuffers = null;
+        }
+
+        void Upload(StlModel m)
+        {
+            if (glGenBuffers != null)
+            {
+                GCHandle pin = GCHandle.Alloc(m.Data, GCHandleType.Pinned);
+                try
+                {
+                    glGenBuffers(1, ref vbo);
+                    glBindBuffer(Native.GL_ARRAY_BUFFER, vbo);
+                    glBufferData(Native.GL_ARRAY_BUFFER, (IntPtr)((long)m.Floats * 4), pin.AddrOfPinnedObject(), Native.GL_STATIC_DRAW);
+                    glBindBuffer(Native.GL_ARRAY_BUFFER, 0);
+                }
+                finally { pin.Free(); }
+            }
+            else
+            {
+                cpuData = m.Data;
+                cpuPin = GCHandle.Alloc(cpuData, GCHandleType.Pinned);
+            }
+            vertCount = m.Floats / 6;
+        }
+
+        void DrawBuffer()
+        {
+            IntPtr basePtr = IntPtr.Zero;
+            if (vbo != 0) glBindBuffer(Native.GL_ARRAY_BUFFER, vbo);
+            else basePtr = cpuPin.AddrOfPinnedObject();
+            Native.glEnableClientState(Native.GL_NORMAL_ARRAY);
+            Native.glEnableClientState(Native.GL_VERTEX_ARRAY);
+            Native.glNormalPointer(Native.GL_FLOAT, 24, basePtr);
+            Native.glVertexPointer(3, Native.GL_FLOAT, 24, (IntPtr)((long)basePtr + 12));
+            Native.glDrawArrays(Native.GL_TRIANGLES, 0, vertCount);
+            Native.glDisableClientState(Native.GL_NORMAL_ARRAY);
+            Native.glDisableClientState(Native.GL_VERTEX_ARRAY);
+            if (vbo != 0) glBindBuffer(Native.GL_ARRAY_BUFFER, 0);
         }
 
         // Jednorazowe przyciecie working set po pierwszym namalowaniu (nie przy kazdej zmianie pliku).
@@ -146,10 +222,12 @@ namespace StlPodglad
             hrc = Native.wglCreateContext(hdc);
             if (hrc == IntPtr.Zero) return;
             Native.wglMakeCurrent(hdc, hrc);
+            LoadBufferFunctions();
         }
 
         protected override void OnHandleDestroyed(EventArgs e)
         {
+            ReleaseModel();
             if (hrc != IntPtr.Zero)
             {
                 Native.wglMakeCurrent(IntPtr.Zero, IntPtr.Zero);
@@ -161,7 +239,6 @@ namespace StlPodglad
                 Native.ReleaseDC(Handle, hdc);
                 hdc = IntPtr.Zero;
             }
-            list = 0;
             base.OnHandleDestroyed(e);
         }
 
@@ -185,7 +262,7 @@ namespace StlPodglad
             else Native.glClearColor(0xF2 / 255f, 0xF2 / 255f, 0xF2 / 255f, 1f);
             Native.glClear(Native.GL_COLOR_BUFFER_BIT | Native.GL_DEPTH_BUFFER_BIT);
 
-            if (list != 0) DrawModel(w, h);
+            if (vertCount != 0) DrawModel(w, h);
             Native.SwapBuffers(hdc);
             if (trimPending)
             {
@@ -280,7 +357,7 @@ namespace StlPodglad
 
             if (dark) Native.glColor3f(0.62f, 0.68f, 0.76f);
             else Native.glColor3f(0.36f, 0.43f, 0.53f);
-            Native.glCallList(list);
+            DrawBuffer();
         }
 
         protected override void OnMouseDown(MouseEventArgs e)
@@ -296,7 +373,7 @@ namespace StlPodglad
             if (e.Button == MouseButtons.None) return;
             int dx = e.X - lastX, dy = e.Y - lastY;
             lastX = e.X; lastY = e.Y;
-            if (list == 0) return;
+            if (vertCount == 0) return;
 
             if (mode3D && e.Button == MouseButtons.Left)
             {
@@ -314,7 +391,7 @@ namespace StlPodglad
         protected override void OnMouseWheel(MouseEventArgs e)
         {
             base.OnMouseWheel(e);
-            if (list == 0) return;
+            if (vertCount == 0) return;
             double nz = Math.Max(0.02, Math.Min(500.0, zoom * Math.Pow(1.15, e.Delta / 120.0)));
             double f = nz / zoom;
             double mx = e.X - ClientSize.Width * 0.5;

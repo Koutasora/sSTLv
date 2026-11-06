@@ -35,7 +35,8 @@ namespace StlPodglad
         public const int GL_AMBIENT = 0x1200;
         public const int GL_AMBIENT_AND_DIFFUSE = 0x1602;
         public const int GL_FRONT_AND_BACK = 0x0408;
-        public const int GL_COMPILE = 0x1300;
+        public const int GL_ARRAY_BUFFER = 0x8892;
+        public const int GL_STATIC_DRAW = 0x88E4;
         public const int GL_TRIANGLES = 0x0004;
         public const int GL_PROJECTION = 0x1701;
         public const int GL_MODELVIEW = 0x1700;
@@ -65,11 +66,6 @@ namespace StlPodglad
         [DllImport(GL)] public static extern void glColorMaterial(int face, int mode);
         [DllImport(GL)] public static extern void glColor3f(float r, float g, float b);
         [DllImport(GL)] public static extern void glShadeModel(int mode);
-        [DllImport(GL)] public static extern uint glGenLists(int range);
-        [DllImport(GL)] public static extern void glDeleteLists(uint list, int range);
-        [DllImport(GL)] public static extern void glNewList(uint list, int mode);
-        [DllImport(GL)] public static extern void glEndList();
-        [DllImport(GL)] public static extern void glCallList(uint list);
         [DllImport(GL)] public static extern void glEnableClientState(int array);
         [DllImport(GL)] public static extern void glDisableClientState(int array);
         [DllImport(GL)] public static extern void glVertexPointer(int size, int type, int stride, IntPtr p);
@@ -79,6 +75,7 @@ namespace StlPodglad
         [DllImport(GL)] public static extern IntPtr wglCreateContext(IntPtr hdc);
         [DllImport(GL)] public static extern bool wglMakeCurrent(IntPtr hdc, IntPtr hglrc);
         [DllImport(GL)] public static extern bool wglDeleteContext(IntPtr hglrc);
+        [DllImport(GL)] public static extern IntPtr wglGetProcAddress(string name);
 
         [DllImport("gdi32.dll")] public static extern int ChoosePixelFormat(IntPtr hdc, ref PIXELFORMATDESCRIPTOR pfd);
         [DllImport("gdi32.dll")] public static extern bool SetPixelFormat(IntPtr hdc, int format, ref PIXELFORMATDESCRIPTOR pfd);

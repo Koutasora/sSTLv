@@ -8,7 +8,7 @@
 ## Do sprawdzenia w działaniu
 - [ ] Rysowanie tylko na zdarzenia, 0% CPU w spoczynku
 - [ ] Niskie zużycie RAM, przycięcie working set raz po pierwszym namalowaniu
-- [ ] Wczytywanie do display listy z tablic wierzchołków (szybkie dla dużych plików)
+- [ ] Wczytywanie do bufora VBO (z awaryjnym rysowaniem z tablic klienta) (szybkie dla dużych plików)
 - [ ] Binarny i ASCII STL (także z BOM i białymi znakami przed "solid"), normalne liczone przy zerowych
 - [ ] Binarny plik z nagłówkiem "solid" i nadmiarowymi bajtami
 - [ ] Uszkodzony / pusty plik: tytuł "błąd odczytu", pusty widok, bez wyjątku

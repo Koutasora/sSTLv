@@ -1,56 +1,34 @@
 using System;
 using System.Globalization;
 using System.IO;
-using System.Runtime.InteropServices;
 using System.Text;
 
 namespace StlPodglad
 {
-    // Wynik wczytania: lista wyswietlania i bryla otaczajaca.
+    // Wynik wczytania: przeplatane dane wierzcholkow (nx,ny,nz,x,y,z na wierzcholek,
+    // 3 wierzcholki na trojkat) i bryla otaczajaca. Data moze byc dluzsze niz Floats.
     class StlModel
     {
-        public uint List;
+        public float[] Data;
+        public int Floats;
         public float MinX, MinY, MinZ, MaxX, MaxY, MaxZ;
     }
 
-    // Czyta STL strumieniowo prosto do listy wyswietlania OpenGL (kontekst musi byc aktywny).
+    // Czyta STL strumieniowo do jednej tablicy float (bez OpenGL).
     static class StlLoader
     {
-        class Acc : IDisposable
+        class Acc
         {
-            const int ChunkTris = 16384;
-            readonly float[] verts = new float[ChunkTris * 9];
-            readonly float[] norms = new float[ChunkTris * 9];
-            GCHandle hv, hn;
-            int pending;
+            public float[] Data = new float[18 * 1024];
+            public int Floats;
             public int Count;
             public float MinX = float.MaxValue, MinY = float.MaxValue, MinZ = float.MaxValue;
             public float MaxX = float.MinValue, MaxY = float.MinValue, MaxZ = float.MinValue;
 
-            public Acc()
+            public void Reserve(long floats)
             {
-                hv = GCHandle.Alloc(verts, GCHandleType.Pinned);
-                hn = GCHandle.Alloc(norms, GCHandleType.Pinned);
-                Native.glEnableClientState(Native.GL_VERTEX_ARRAY);
-                Native.glEnableClientState(Native.GL_NORMAL_ARRAY);
-                Native.glVertexPointer(3, Native.GL_FLOAT, 0, hv.AddrOfPinnedObject());
-                Native.glNormalPointer(Native.GL_FLOAT, 0, hn.AddrOfPinnedObject());
-            }
-
-            // Dane tablic sa kopiowane do listy w chwili glDrawArrays (kompilacji listy).
-            public void Flush()
-            {
-                if (pending == 0) return;
-                Native.glDrawArrays(Native.GL_TRIANGLES, 0, pending * 3);
-                pending = 0;
-            }
-
-            public void Dispose()
-            {
-                Native.glDisableClientState(Native.GL_VERTEX_ARRAY);
-                Native.glDisableClientState(Native.GL_NORMAL_ARRAY);
-                hv.Free();
-                hn.Free();
+                if (floats > 0x7FFFFFC7) throw new OutOfMemoryException();
+                if (floats > Data.Length) Data = new float[floats];
             }
 
             static bool Bad(float v)
@@ -75,12 +53,21 @@ namespace StlPodglad
                     if (nx * nx + ny * ny + nz * nz < 1e-30f) { nx = 0; ny = 0; nz = 1; }
                 }
 
-                int o = pending * 9;
-                for (int i = 0; i < 9; i += 3) { norms[o + i] = nx; norms[o + i + 1] = ny; norms[o + i + 2] = nz; }
-                verts[o] = ax; verts[o + 1] = ay; verts[o + 2] = az;
-                verts[o + 3] = bx; verts[o + 4] = by; verts[o + 5] = bz;
-                verts[o + 6] = cx; verts[o + 7] = cy; verts[o + 8] = cz;
-                if (++pending == ChunkTris) Flush();
+                if (Floats + 18 > Data.Length)
+                {
+                    long want = (long)Data.Length * 2;
+                    if (want > 0x7FFFFFC7) want = 0x7FFFFFC7;
+                    if (want < Floats + 18) throw new OutOfMemoryException();
+                    float[] bigger = new float[want];
+                    Array.Copy(Data, bigger, Floats);
+                    Data = bigger;
+                }
+                float[] d = Data;
+                int o = Floats;
+                d[o] = nx; d[o + 1] = ny; d[o + 2] = nz; d[o + 3] = ax; d[o + 4] = ay; d[o + 5] = az;
+                d[o + 6] = nx; d[o + 7] = ny; d[o + 8] = nz; d[o + 9] = bx; d[o + 10] = by; d[o + 11] = bz;
+                d[o + 12] = nx; d[o + 13] = ny; d[o + 14] = nz; d[o + 15] = cx; d[o + 16] = cy; d[o + 17] = cz;
+                Floats += 18;
 
                 Extend(ax, ay, az);
                 Extend(bx, by, bz);
@@ -99,38 +86,16 @@ namespace StlPodglad
             }
         }
 
-        // Zwraca model albo rzuca wyjatek (plik uszkodzony / pusty). Lista jest sprzatana przy bledzie.
+        // Zwraca model albo rzuca wyjatek (plik uszkodzony / pusty).
         public static StlModel Load(string path)
         {
-            uint list = Native.glGenLists(1);
-            if (list == 0) throw new InvalidOperationException("glGenLists");
-            Acc acc = null;
-            bool ok = false;
-            try
-            {
-                Native.glNewList(list, Native.GL_COMPILE);
-                try
-                {
-                    acc = new Acc();
-                    ReadFile(path, acc);
-                    acc.Flush();
-                }
-                finally
-                {
-                    if (acc != null) acc.Dispose();
-                    Native.glEndList();
-                }
-
-                if (acc.Count == 0) throw new InvalidDataException("brak trojkatow");
-                ok = true;
-            }
-            finally
-            {
-                if (!ok) Native.glDeleteLists(list, 1);
-            }
+            Acc acc = new Acc();
+            ReadFile(path, acc);
+            if (acc.Count == 0) throw new InvalidDataException("brak trojkatow");
 
             StlModel m = new StlModel();
-            m.List = list;
+            m.Data = acc.Data;
+            m.Floats = acc.Floats;
             m.MinX = acc.MinX; m.MinY = acc.MinY; m.MinZ = acc.MinZ;
             m.MaxX = acc.MaxX; m.MaxY = acc.MaxY; m.MaxZ = acc.MaxZ;
             return m;
@@ -194,6 +159,7 @@ namespace StlPodglad
         static void ReadBinary(Stream s, long n, Acc acc)
         {
             const int Chunk = 4096;
+            acc.Reserve(n * 18);
             byte[] buf = new byte[50 * Chunk];
             long left = n;
             while (left > 0)
