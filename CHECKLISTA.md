@@ -5,6 +5,7 @@
 - [x] build.cmd (csc, C# 5), SetProcessDPIAware
 - [x] Pliki testowe (test\generuj.py)
 - [x] Nazwa sSTLv, wersja 1.0.0.0 (AssemblyInfo.cs)
+- [x] Instalator sSTLv-instalator.exe (osadzone sSTLv.exe, manifest asInvoker, DPI)
 - [x] Skrypty instaluj / odinstaluj napisane (składnia sprawdzona parserem PowerShell)
 
 ## Sprawdzone w działaniu (AMD Radeon Vega 11, Windows 11, ciemny motyw)
@@ -29,6 +30,12 @@
 - [x] Wygląd: światła, kontrast na ciemnym tle
 
 ## Do sprawdzenia w działaniu
+- [x] sSTLv-instalator.exe: instalacja bez administratora, wpisy HKCU, wpis w Aplikacjach zainstalowanych, okno końcowe (LAB)
+- [x] Instalator: ponowna instalacja na istniejącej (LAB)
+- [ ] Instalator: odmowa gdy sSTLv działa
+- [x] `/odinstaluj` (polecenie z wpisu Aplikacji zainstalowanych): usuwa wpisy, exe i folder razem z instalatorem (LAB)
+- [ ] Odinstalowanie kliknięte w Ustawieniach
+- [ ] Wersja przenośna sSTLv.exe nie zapisuje nic poza plikiem
 - [x] instaluj.cmd: kopia do %LOCALAPPDATA%, wpisy HKCU, wersja w komunikacie, strona sSTLv w Aplikacjach domyślnych (sprawdzone na LAB)
 - [x] odinstaluj.cmd usuwa tylko własne wpisy i folder (sprawdzone na LAB)
 - [ ] Jasny motyw (AppsUseLightTheme = 1)

@@ -1,4 +1,4 @@
-# Odinstalowanie sSTLv: usuwa tylko wpisy HKCU i folder utworzone przez instaluj.ps1.
+# Odinstalowanie sSTLv: usuwa wpisy HKCU i folder utworzone przez instaluj.ps1 lub sSTLv-instalator.exe.
 # Plik zapisany w ASCII (Windows PowerShell 5.1 czyta skrypty bez BOM jako ANSI).
 $ErrorActionPreference = 'Stop'
 
@@ -39,6 +39,7 @@ Remove-Value 'Software\Classes\.stl\OpenWithProgids' $progId
 Remove-Tree 'Software\Classes\Applications\sSTLv.exe'
 Remove-Value 'Software\RegisteredApplications' 'sSTLv'
 Remove-Tree 'Software\sSTLv'
+Remove-Tree 'Software\Microsoft\Windows\CurrentVersion\Uninstall\sSTLv'
 
 # Domyslna wartosc .stl tylko jesli wskazuje na nas.
 $k = $hkcu.OpenSubKey('Software\Classes\.stl', $true)
