@@ -1,1 +1,54 @@
-# sSTLv
+# sSTLv (Simple STL Viewer)
+
+Lekka przeglądarka plików STL dla Windows (jak prosta przeglądarka obrazów). C# 5 + WinForms + OpenGL 1.1,
+bez zewnętrznych bibliotek, exe ok. 20 KB. Rysuje tylko na zdarzenia (brak timerów i pętli), w spoczynku 0% CPU.
+
+## Budowanie
+
+    build.cmd
+
+Wynik: `bin\sSTLv.exe`. Wymaga tylko wbudowanego kompilatora .NET Framework (`csc.exe`).
+
+## Instalacja
+
+Bez uprawnień administratora, tylko dla bieżącego użytkownika (HKCU):
+
+1. Dwukrotnie kliknij `instaluj.cmd` (w razie potrzeby sam zbuduje program). Kopiuje `sSTLv.exe` do
+   `%LOCALAPPDATA%\Programs\sSTLv` i rejestruje obsługę .stl ("Otwórz za pomocą", Aplikacje domyślne).
+2. Windows nie pozwala ustawić domyślnej aplikacji dla .stl po cichu: w otwartych Ustawieniach kliknij
+   "Ustaw domyślne" dla sSTLv.
+
+## Odinstalowanie
+
+Dwukrotnie kliknij `odinstaluj.cmd`: usuwa wpisy w rejestrze dodane przez instalator oraz folder
+`%LOCALAPPDATA%\Programs\sSTLv`. Wybór domyślnej aplikacji zapisany przez Windows (UserChoice) nie jest ruszany.
+
+## Użycie
+
+- `sSTLv.exe plik.stl` albo "Otwórz za pomocą"; można też przeciągnąć plik .stl na okno (drag & drop).
+- Bez argumentu: puste okno.
+
+## Klawisze
+
+- Lewo / Prawo: poprzedni / następny plik .stl w folderze (sortowanie jak w Eksploratorze, zapętlone).
+- `D`: przełącza widok 2D / 3D i za każdym razem resetuje widok (w obu kierunkach).
+- `Esc`: zamyka okno.
+
+Brak innych klawiszy.
+
+## Mysz
+
+- Kółko: zoom do kursora (w 2D i w 3D).
+- 2D (stały kąt izometryczny): przeciąganie dowolnym przyciskiem przesuwa widok.
+- 3D (perspektywa): lewy przycisk obraca, prawy / środkowy przesuwa.
+- Zmiana pliku resetuje widok (tryb 2D/3D zostaje).
+
+## Motyw
+
+Jasny / ciemny wybierany automatycznie z ustawień Windows: ciemny tylko gdy `AppsUseLightTheme` = 0, w pozostałych przypadkach jasny. Odczyt raz przy starcie.
+W trybie ciemnym pasek tytułu też jest ciemny.
+
+## Testy
+
+`python test\generuj.py` zapisuje małe pliki testowe do `test\pliki\` (sześcian binarny, piramida ASCII,
+zerowe normalne, plik uszkodzony, plik pusty).
