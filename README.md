@@ -1,6 +1,6 @@
 # sSTLv
 
-Simple STL Viewer for Windows. C# 5, WinForms, OpenGL 1.1, no dependencies.
+Simple STL Viewer for Windows 10/11. C# 5, WinForms, OpenGL 1.1.
 
 ## Download
 
@@ -21,16 +21,15 @@ Simple STL Viewer for Windows. C# 5, WinForms, OpenGL 1.1, no dependencies.
 | Left drag (3D) | rotate |
 | Right / middle drag (3D) | pan |
 
+Open a file: double-click (after install), drag & drop onto the window, or `sSTLv.exe file.stl`.
+
 ## Build
+
+Requires Inno Setup 6 for the installer.
 
     build.cmd
 
-Output: `bin\sSTLv.exe`, `bin\sSTLv-instalator.exe`. Uses the .NET Framework `csc.exe` built into Windows. The installer needs Inno Setup 6 (skipped if missing).
-
-## Install from source
-
-    instaluj.cmd
-    odinstaluj.cmd
+Output: `bin\sSTLv.exe`, `bin\sSTLv-instalator.exe`.
 
 ## Other
 
