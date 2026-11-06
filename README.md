@@ -50,7 +50,7 @@ Brak innych klawiszy.
 
 Mały półprzezroczysty kwadrat w lewym górnym rogu pokazuje bieżący tryb: "2D" albo "3D" (w obu trybach wygląda tak samo, zmienia się tylko napis). Tylko wyświetla, nie reaguje na mysz.
 
-W lewym dolnym rogu widoku jest półprzezroczysta podpowiedź "Press D to change view | Press ESC to quit" (klawisze D i ESC w ramkach). Znika po 10 sekundach od uruchomienia (raz na start programu) i chowa się, gdy okno jest za wąskie.
+W lewym dolnym rogu widoku jest półprzezroczysta podpowiedź "Press D to change view | Press ESC to quit" (D i ESC pogrubioną kursywą). Znika po 10 sekundach od uruchomienia (raz na start programu) i chowa się, gdy okno jest za wąskie.
 
 ## Mysz
 

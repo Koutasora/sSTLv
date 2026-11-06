@@ -490,34 +490,32 @@ namespace StlPodglad
             });
         }
 
-        // Podpowiedz: tekst w jednej linii, "D" i "ESC" jako klawisze (pogrubione, we wlasnych ramkach).
+        // Podpowiedz: tekst w jednej linii, "D" i "ESC" pogrubione kursywa.
         static readonly string[] HintRuns = new string[] { "Press ", "D", " to change view | Press ", "ESC", " to quit" };
 
         // Zwraca teksture podpowiedzi i jej rozmiar (w, h w pikselach).
         static uint MakeHintTexture(double k, bool dark, out int w, out int h, out int potW, out int potH)
         {
-            Color fill, ink, capFill, capInk;
+            Color fill, ink, capInk;
             if (dark)
             {
                 fill = Color.FromArgb(26, 255, 255, 255); ink = Color.FromArgb(191, 255, 255, 255);
-                capFill = Color.FromArgb(46, 255, 255, 255); capInk = Color.White;
+                capInk = Color.White;
             }
             else
             {
                 fill = Color.FromArgb(15, 0, 0, 0); ink = Color.FromArgb(217, 0x30, 0x30, 0x30);
-                capFill = Color.FromArgb(26, 0, 0, 0); capInk = Color.FromArgb(0x20, 0x20, 0x20);
+                capInk = Color.FromArgb(0x20, 0x20, 0x20);
             }
 
             float em = (float)(12 * k);
-            float padX = (float)(8 * k), padY = (float)(4 * k), capPadX = (float)(4 * k), capPadY = (float)(1 * k);
-            float capR = (float)(3 * k), boxR = (float)(6 * k);
+            float padX = (float)(8 * k), padY = (float)(4 * k), boxR = (float)(6 * k);
 
             FontStyle style, capStyle;
             FontFamily fam = OverlayFont(false, out style);
-            FontFamily capFam = OverlayFont(true, out capStyle);
-            float asc = em * fam.GetCellAscent(style) / fam.GetEmHeight(style);
+            FontFamily capFam = OverlayFont(false, out capStyle);
+            capStyle |= FontStyle.Bold | FontStyle.Italic;
             float lh = em * fam.GetLineSpacing(style) / fam.GetEmHeight(style);
-            float capAsc = em * capFam.GetCellAscent(capStyle) / capFam.GetEmHeight(capStyle);
 
             StringFormat sf = new StringFormat(StringFormat.GenericTypographic);
             sf.FormatFlags |= StringFormatFlags.MeasureTrailingSpaces;
@@ -534,7 +532,7 @@ namespace StlPodglad
                 {
                     bool key = (i & 1) == 1;
                     float tw = mg.MeasureString(HintRuns[i], key ? cf : f, new PointF(0, 0), sf).Width;
-                    widths[i] = key ? tw + 2 * capPadX : tw;
+                    widths[i] = tw;
                     total += widths[i];
                 }
             }
@@ -555,26 +553,13 @@ namespace StlPodglad
                 using (Font cf = new Font(capFam, em, capStyle, GraphicsUnit.Pixel))
                 using (SolidBrush ib = new SolidBrush(ink))
                 using (SolidBrush cib = new SolidBrush(capInk))
-                using (SolidBrush cfb = new SolidBrush(capFill))
                 {
                     float x = padX;
                     for (int i = 0; i < HintRuns.Length; i++)
                     {
                         if ((i & 1) == 1)
                         {
-                            // ramka od gory liter wielkich do linii bazowej, z marginesem
-                            float top = y0 + capAsc - em * 0.72f - capPadY;
-                            float hgt = em * 0.72f + 2 * capPadY;
-                            using (System.Drawing.Drawing2D.GraphicsPath cp = RoundedRect(widths[i], hgt, capR))
-                            {
-                                using (System.Drawing.Drawing2D.Matrix m = new System.Drawing.Drawing2D.Matrix())
-                                {
-                                    m.Translate(x, top);
-                                    cp.Transform(m);
-                                }
-                                g.FillPath(cfb, cp);
-                            }
-                            g.DrawString(HintRuns[i], cf, cib, x + capPadX, y0, sf);
+                            g.DrawString(HintRuns[i], cf, cib, x, y0, sf);
                         }
                         else
                         {

@@ -30,7 +30,7 @@
 - [x] Wygląd: światła, kontrast na ciemnym tle
 
 ## Do sprawdzenia w działaniu
-- [x] Podpowiedź w lewym dolnym rogu, klawisze D i ESC w ramkach (LAB)
+- [x] Podpowiedź w lewym dolnym rogu, D i ESC pogrubioną kursywą (LAB)
 - [ ] Podpowiedź chowa się w wąskim oknie
 - [x] Podpowiedź znika po 10 s, potem 0 ms CPU w 10 s (LAB)
 - [x] Wskaźnik trybu 2D/3D w lewym górnym rogu, ten sam kolor w obu trybach (LAB)
