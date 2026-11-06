@@ -5,7 +5,7 @@
 - [x] build.cmd (csc, C# 5), SetProcessDPIAware
 - [x] Pliki testowe (test\generuj.py)
 - [x] Nazwa sSTLv, wersja 1.0.0.0 (AssemblyInfo.cs)
-- [x] Instalator sSTLv-instalator.exe (osadzone sSTLv.exe, manifest asInvoker, DPI)
+- [x] Instalator Inno Setup (instalator\sSTLv.iss), wersja 1.0.1
 - [x] Skrypty instaluj / odinstaluj napisane (składnia sprawdzona parserem PowerShell)
 
 ## Sprawdzone w działaniu (AMD Radeon Vega 11, Windows 11, ciemny motyw)
@@ -35,10 +35,11 @@
 - [x] Podpowiedź znika po 10 s, potem 0 ms CPU w 10 s (LAB)
 - [x] Wskaźnik trybu 2D/3D w lewym górnym rogu, ten sam kolor w obu trybach (LAB)
 - [ ] Wskaźnik: puste okno, inne skalowanie DPI
-- [x] sSTLv-instalator.exe: instalacja bez administratora, wpisy HKCU, wpis w Aplikacjach zainstalowanych, okno końcowe (LAB)
-- [x] Instalator: ponowna instalacja na istniejącej (LAB)
-- [ ] Instalator: odmowa gdy sSTLv działa
-- [x] `/odinstaluj` (polecenie z wpisu Aplikacji zainstalowanych): usuwa wpisy, exe i folder razem z instalatorem (LAB)
+- [x] Instalator Inno Setup: instalacja bez administratora, wpisy HKCU, wpis w Aplikacjach zainstalowanych (LAB, główny PC)
+- [x] Instalator: ponowna instalacja na istniejącej oraz migracja ze starego instalatora C# (LAB)
+- [ ] Instalator: prośba o zamknięcie działającego sSTLv (CloseApplications)
+- [x] Odinstalowanie (unins000.exe) usuwa wpisy, exe i folder (LAB)
+- [ ] Pole wyboru "Wybierz sSTLv jako domyślną aplikację" otwiera Ustawienia (PL i EN)
 - [ ] Odinstalowanie kliknięte w Ustawieniach
 - [ ] Wersja przenośna sSTLv.exe nie zapisuje nic poza plikiem
 - [x] instaluj.cmd: kopia do %LOCALAPPDATA%, wpisy HKCU, wersja w komunikacie, strona sSTLv w Aplikacjach domyślnych (sprawdzone na LAB)
