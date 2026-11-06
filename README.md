@@ -23,15 +23,5 @@ Simple STL Viewer for Windows 10/11. C# 5, WinForms, OpenGL 1.1.
 
 Open a file: double-click (after install), drag & drop onto the window, or `sSTLv.exe file.stl`.
 
-## Build
 
-Requires Inno Setup 6 for the installer.
 
-    build.cmd
-
-Output: `bin\sSTLv.exe`, `bin\sSTLv-instalator.exe`.
-
-## Other
-
-- Test files: `python test\generuj.py`
-- Icon: `powershell -ExecutionPolicy Bypass -File ikona\generuj_ikone.ps1`
