@@ -30,9 +30,11 @@
 - [x] Wygląd: światła, kontrast na ciemnym tle
 
 ## Do sprawdzenia w działaniu
-- [ ] Podpowiedź w lewym dolnym rogu (10 px od krawędzi, klawisze D i ESC w ramkach, chowa się w wąskim oknie)
-- [ ] Podpowiedź znika po 10 s z wygaszeniem, potem brak timera (0% CPU)
-- [ ] Wskaźnik trybu 2D/3D w lewym górnym rogu (także w pustym oknie, skalowanie z DPI, nie łapie myszy)
+- [x] Podpowiedź w lewym dolnym rogu, klawisze D i ESC w ramkach (LAB)
+- [ ] Podpowiedź chowa się w wąskim oknie
+- [x] Podpowiedź znika po 10 s, potem 0 ms CPU w 10 s (LAB)
+- [x] Wskaźnik trybu 2D/3D w lewym górnym rogu, ten sam kolor w obu trybach (LAB)
+- [ ] Wskaźnik: puste okno, inne skalowanie DPI
 - [x] sSTLv-instalator.exe: instalacja bez administratora, wpisy HKCU, wpis w Aplikacjach zainstalowanych, okno końcowe (LAB)
 - [x] Instalator: ponowna instalacja na istniejącej (LAB)
 - [ ] Instalator: odmowa gdy sSTLv działa
