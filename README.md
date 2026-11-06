@@ -1,7 +1,7 @@
 # sSTLv (Simple STL Viewer)
 
 Lekka przeglądarka plików STL dla Windows (jak prosta przeglądarka obrazów). C# 5 + WinForms + OpenGL 1.1,
-bez zewnętrznych bibliotek, exe ok. 20 KB. Rysuje tylko na zdarzenia (brak timerów i pętli), w spoczynku 0% CPU.
+bez zewnętrznych bibliotek, exe ok. 31 KB (z ikoną). Rysuje tylko na zdarzenia (brak timerów i pętli), w spoczynku 0% CPU.
 
 ## Budowanie
 
@@ -52,3 +52,7 @@ W trybie ciemnym pasek tytułu też jest ciemny.
 
 `python test\generuj.py` zapisuje małe pliki testowe do `test\pliki\` (sześcian binarny, piramida ASCII,
 zerowe normalne, plik uszkodzony, plik pusty).
+
+## Ikona
+
+`ikona\sSTLv.ico` jest generowana skryptem `python ikona\generuj_ikone.py` (czysty Python, bez bibliotek) i wbudowywana w exe przez build.cmd.
