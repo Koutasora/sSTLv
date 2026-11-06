@@ -48,7 +48,7 @@ Brak innych klawiszy.
 
 ## Wskaźnik trybu
 
-Mały kwadrat w lewym górnym rogu pokazuje bieżący tryb: obrys "2D" albo wypełniony na niebiesko "3D". Tylko wyświetla, nie reaguje na mysz.
+Mały półprzezroczysty kwadrat w lewym górnym rogu pokazuje bieżący tryb: "2D" (neutralny) albo "3D" (niebieski). Tylko wyświetla, nie reaguje na mysz.
 
 ## Mysz
 

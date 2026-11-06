@@ -228,6 +228,7 @@ namespace StlPodglad
         protected override void OnHandleDestroyed(EventArgs e)
         {
             ReleaseModel();
+            if (hrc != IntPtr.Zero) DeleteIndicator();
             if (hrc != IntPtr.Zero)
             {
                 Native.wglMakeCurrent(IntPtr.Zero, IntPtr.Zero);
@@ -361,48 +362,145 @@ namespace StlPodglad
             DrawBuffer();
         }
 
-        // Wskaznik trybu w lewym gornym rogu ("2D"/"3D"), rysowany prostokatami w pikselach okna.
-        static void Box(double x, double y, double w, double h)
+        // Wskaznik trybu w lewym gornym rogu (2D / 3D): tekstura RGBA narysowana raz przez GDI+,
+        // wyswietlana 1:1 jako jeden czworokat. Tylko wyswietlanie, bez obslugi myszy.
+        uint[] indTex = new uint[2];
+        int indSize, indPot;
+        double indScale;
+        bool indDark;
+
+        static System.Drawing.Drawing2D.GraphicsPath RoundedSquare(float size, float r)
         {
-            Native.glRectf((float)x, (float)y, (float)(x + w), (float)(y + h));
+            System.Drawing.Drawing2D.GraphicsPath gp = new System.Drawing.Drawing2D.GraphicsPath();
+            float d = r * 2;
+            gp.AddArc(0, 0, d, d, 180, 90);
+            gp.AddArc(size - d, 0, d, d, 270, 90);
+            gp.AddArc(size - d, size - d, d, d, 0, 90);
+            gp.AddArc(0, size - d, d, d, 90, 90);
+            gp.CloseFigure();
+            return gp;
         }
 
-        // seg: bity 0 gora, 1 prawa gorna, 2 prawa dolna, 3 dol, 4 lewa dolna, 5 lewa gorna, 6 srodek
-        static void Digit(int seg, double x, double y, double gw, double gh, double t)
+        static FontFamily IndicatorFont(out FontStyle style)
         {
-            double mid = y + (gh - t) / 2;
-            if ((seg & 1) != 0) Box(x, y, gw, t);
-            if ((seg & 2) != 0) Box(x + gw - t, y, t, gh / 2 + t / 2);
-            if ((seg & 4) != 0) Box(x + gw - t, y + gh / 2 - t / 2, t, gh / 2 + t / 2);
-            if ((seg & 8) != 0) Box(x, y + gh - t, gw, t);
-            if ((seg & 16) != 0) Box(x, y + gh / 2 - t / 2, t, gh / 2 + t / 2);
-            if ((seg & 32) != 0) Box(x, y, t, gh / 2 + t / 2);
-            if ((seg & 64) != 0) Box(x, mid, gw, t);
+            style = FontStyle.Regular;
+            try { return new FontFamily("Segoe UI Semibold"); }
+            catch (ArgumentException) { }
+            style = FontStyle.Bold;
+            try { return new FontFamily("Segoe UI"); }
+            catch (ArgumentException) { }
+            return FontFamily.GenericSansSerif;
         }
 
-        static void LetterD(double x, double y, double gw, double gh, double t)
+        uint MakeIndicatorTexture(string text, bool is3D, double k, int size, int pot)
         {
-            Box(x, y, t, gh);
-            Box(x, y, gw - t, t);
-            Box(x, y + gh - t, gw - t, t);
-            Box(x + gw - t, y + t, t, gh - 2 * t);
+            Color fill, ink;
+            if (is3D) { fill = Color.FromArgb(204, 0x3A, 0x6E, 0xA5); ink = Color.White; }
+            else if (dark) { fill = Color.FromArgb(36, 255, 255, 255); ink = Color.FromArgb(235, 255, 255, 255); }
+            else { fill = Color.FromArgb(20, 0, 0, 0); ink = Color.FromArgb(0x30, 0x30, 0x30); }
+
+            byte[] px = new byte[pot * pot * 4];
+            using (Bitmap bmp = new Bitmap(pot, pot, System.Drawing.Imaging.PixelFormat.Format32bppArgb))
+            {
+                using (Graphics g = Graphics.FromImage(bmp))
+                {
+                    g.Clear(Color.Transparent);
+                    g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+                    g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias;
+                    using (System.Drawing.Drawing2D.GraphicsPath sq = RoundedSquare(size, (float)(6 * k)))
+                    using (SolidBrush fb = new SolidBrush(fill))
+                        g.FillPath(fb, sq);
+
+                    FontStyle style;
+                    FontFamily fam = IndicatorFont(out style);
+                    using (System.Drawing.Drawing2D.GraphicsPath tp = new System.Drawing.Drawing2D.GraphicsPath())
+                    {
+                        tp.AddString(text, fam, (int)style, (float)(15 * k), new PointF(0, 0), StringFormat.GenericTypographic);
+                        RectangleF tb = tp.GetBounds();
+                        using (System.Drawing.Drawing2D.Matrix m = new System.Drawing.Drawing2D.Matrix())
+                        {
+                            m.Translate(size / 2f - (tb.Left + tb.Width / 2f), size / 2f - (tb.Top + tb.Height / 2f));
+                            tp.Transform(m);
+                        }
+                        using (SolidBrush ib = new SolidBrush(ink))
+                            g.FillPath(ib, tp);
+                    }
+                }
+                System.Drawing.Imaging.BitmapData bd = bmp.LockBits(new Rectangle(0, 0, pot, pot),
+                    System.Drawing.Imaging.ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+                Marshal.Copy(bd.Scan0, px, 0, px.Length);
+                bmp.UnlockBits(bd);
+            }
+            // BGRA (GDI+) -> RGBA
+            for (int i = 0; i < px.Length; i += 4)
+            {
+                byte t = px[i]; px[i] = px[i + 2]; px[i + 2] = t;
+            }
+
+            uint[] id = new uint[1];
+            Native.glGenTextures(1, id);
+            Native.glBindTexture(Native.GL_TEXTURE_2D, id[0]);
+            Native.glTexParameteri(Native.GL_TEXTURE_2D, Native.GL_TEXTURE_MIN_FILTER, Native.GL_LINEAR);
+            Native.glTexParameteri(Native.GL_TEXTURE_2D, Native.GL_TEXTURE_MAG_FILTER, Native.GL_LINEAR);
+            Native.glTexParameteri(Native.GL_TEXTURE_2D, Native.GL_TEXTURE_WRAP_S, Native.GL_CLAMP);
+            Native.glTexParameteri(Native.GL_TEXTURE_2D, Native.GL_TEXTURE_WRAP_T, Native.GL_CLAMP);
+            GCHandle pin = GCHandle.Alloc(px, GCHandleType.Pinned);
+            try
+            {
+                Native.glTexImage2D(Native.GL_TEXTURE_2D, 0, Native.GL_RGBA, pot, pot, 0, Native.GL_RGBA,
+                    Native.GL_UNSIGNED_BYTE, pin.AddrOfPinnedObject());
+            }
+            finally { pin.Free(); }
+            return id[0];
+        }
+
+        void DeleteIndicator()
+        {
+            if (indTex[0] != 0 || indTex[1] != 0)
+            {
+                Native.glDeleteTextures(2, indTex);
+                indTex[0] = 0; indTex[1] = 0;
+            }
+        }
+
+        void EnsureIndicator()
+        {
+            double k = 1.0;
+            using (Graphics g = CreateGraphics()) k = g.DpiX / 96.0;
+            if (indTex[0] != 0 && indScale == k && indDark == dark) return;
+            DeleteIndicator();
+            indScale = k;
+            indDark = dark;
+            indSize = (int)Math.Round(36 * k);
+            indPot = 1;
+            while (indPot < indSize) indPot *= 2;
+            try
+            {
+                indTex[0] = MakeIndicatorTexture("2D", false, k, indSize, indPot);
+                indTex[1] = MakeIndicatorTexture("3D", true, k, indSize, indPot);
+            }
+            catch (Exception)
+            {
+                DeleteIndicator();
+            }
         }
 
         void DrawIndicator(int w, int h)
         {
-            double k = 1.0;
-            using (Graphics g = CreateGraphics()) k = g.DpiX / 96.0;
-            double x0 = Math.Round(10 * k), y0 = Math.Round(10 * k);
-            double bw = Math.Round(34 * k), bh = Math.Round(22 * k);
-            double t = Math.Max(2, Math.Round(1.6 * k));
-            double bt = Math.Max(1, Math.Round(1.5 * k));
-            double gw = Math.Round(8 * k), gh = Math.Round(12 * k), gap = Math.Round(3 * k);
-            double tx = x0 + Math.Round((bw - (2 * gw + gap)) / 2);
-            double ty = y0 + Math.Round((bh - gh) / 2);
+            EnsureIndicator();
+            uint tex = indTex[mode3D ? 1 : 0];
+            if (tex == 0) return;
 
-            Native.glPushAttrib(Native.GL_ENABLE_BIT | Native.GL_CURRENT_BIT);
+            float x0 = (float)Math.Round(10 * indScale), y0 = x0;
+            float s = indSize;
+            float u = (float)indSize / indPot;
+
+            Native.glPushAttrib(Native.GL_ENABLE_BIT | Native.GL_CURRENT_BIT | Native.GL_COLOR_BUFFER_BIT);
             Native.glDisable(Native.GL_LIGHTING);
             Native.glDisable(Native.GL_DEPTH_TEST);
+            Native.glEnable(Native.GL_TEXTURE_2D);
+            Native.glEnable(Native.GL_BLEND);
+            Native.glBlendFunc(Native.GL_SRC_ALPHA, Native.GL_ONE_MINUS_SRC_ALPHA);
             Native.glMatrixMode(Native.GL_PROJECTION);
             Native.glPushMatrix();
             Native.glLoadIdentity();
@@ -411,24 +509,14 @@ namespace StlPodglad
             Native.glPushMatrix();
             Native.glLoadIdentity();
 
-            if (mode3D)
-            {
-                Native.glColor3f(0x3A / 255f, 0x6E / 255f, 0xA5 / 255f);
-                Box(x0, y0, bw, bh);
-                Native.glColor3f(1f, 1f, 1f);
-            }
-            else
-            {
-                float c = dark ? 0xD0 / 255f : 0x30 / 255f;
-                Native.glColor3f(c, c, c);
-                Box(x0, y0, bw, bt);
-                Box(x0, y0 + bh - bt, bw, bt);
-                Box(x0, y0, bt, bh);
-                Box(x0 + bw - bt, y0, bt, bh);
-            }
-            // 2: gora, prawa gorna, srodek, lewa dolna, dol; 3: gora, prawa gorna, srodek, prawa dolna, dol
-            Digit(mode3D ? (1 | 2 | 4 | 8 | 64) : (1 | 2 | 8 | 16 | 64), tx, ty, gw, gh, t);
-            LetterD(tx + gw + gap, ty, gw, gh, t);
+            Native.glBindTexture(Native.GL_TEXTURE_2D, tex);
+            Native.glColor4f(1f, 1f, 1f, 1f);
+            Native.glBegin(Native.GL_QUADS);
+            Native.glTexCoord2f(0, 0); Native.glVertex2f(x0, y0);
+            Native.glTexCoord2f(u, 0); Native.glVertex2f(x0 + s, y0);
+            Native.glTexCoord2f(u, u); Native.glVertex2f(x0 + s, y0 + s);
+            Native.glTexCoord2f(0, u); Native.glVertex2f(x0, y0 + s);
+            Native.glEnd();
 
             Native.glPopMatrix();
             Native.glMatrixMode(Native.GL_PROJECTION);
