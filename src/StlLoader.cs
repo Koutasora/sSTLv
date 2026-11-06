@@ -194,7 +194,7 @@ namespace StlPodglad
             float nx = 0, ny = 0, nz = 0;
             float[] v = new float[9];
             int k = 0;
-            using (StreamReader r = new StreamReader(s, Encoding.UTF8, true, 65536))
+            using (StreamReader r = new StreamReader(s, Encoding.UTF8, true, 65536, true))
             {
                 string line;
                 while ((line = r.ReadLine()) != null)

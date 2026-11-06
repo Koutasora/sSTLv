@@ -10,6 +10,7 @@
 - [x] Niskie zużycie RAM: working set 7-15 MB, także z plikiem 1 mln trójkątów
 - [x] Wczytywanie do bufora VBO; plik 50 MB (1 mln trójkątów) otwiera się w ok. 0,5 s
 - [x] Binarny i ASCII STL, normalne liczone przy zerowych
+- [x] Binarny plik z nagłówkiem "solid" i nadmiarowymi bajtami
 - [x] Uszkodzony / pusty plik: tytuł "błąd odczytu", pusty widok, bez wyjątku
 - [x] Plik z argumentu wiersza poleceń
 - [x] Lewo / Prawo: poprzedni / następny .stl (naturalne sortowanie, zapętlenie), właściwy model po zmianie pliku
@@ -27,6 +28,6 @@
 - [ ] Jasny motyw (AppsUseLightTheme = 1)
 - [ ] Drag & drop pliku na okno
 - [ ] Plik nie-.stl z argumentu
-- [ ] ASCII z BOM / białymi znakami przed "solid"; binarny z nagłówkiem "solid" i nadmiarowymi bajtami
+- [ ] ASCII z BOM / białymi znakami przed "solid"
 - [ ] Przesuwanie w 2D i 3D (prawy / środkowy przycisk)
 - [ ] Auto-repeat D ignorowany
