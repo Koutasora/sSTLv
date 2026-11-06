@@ -35,10 +35,10 @@
 - [x] Podpowiedź znika po 10 s, potem 0 ms CPU w 10 s (LAB)
 - [x] Wskaźnik trybu 2D/3D w lewym górnym rogu, ten sam kolor w obu trybach (LAB)
 - [ ] Wskaźnik: puste okno, inne skalowanie DPI
-- [ ] Instalator Inno Setup: instalacja bez administratora, wpisy HKCU, wpis w Aplikacjach zainstalowanych
-- [ ] Instalator: ponowna instalacja na istniejącej oraz migracja ze starego instalatora C#
+- [x] Instalator Inno Setup: instalacja bez administratora, wpisy HKCU, wpis w Aplikacjach zainstalowanych (LAB, główny PC)
+- [x] Instalator: ponowna instalacja na istniejącej oraz migracja ze starego instalatora C# (LAB)
 - [ ] Instalator: prośba o zamknięcie działającego sSTLv (CloseApplications)
-- [ ] Odinstalowanie z Ustawień usuwa wpisy, exe i folder
+- [x] Odinstalowanie (unins000.exe) usuwa wpisy, exe i folder (LAB)
 - [ ] Pole wyboru "Wybierz sSTLv jako domyślną aplikację" otwiera Ustawienia (PL i EN)
 - [ ] Odinstalowanie kliknięte w Ustawieniach
 - [ ] Wersja przenośna sSTLv.exe nie zapisuje nic poza plikiem
