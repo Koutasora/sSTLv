@@ -47,10 +47,15 @@ Root: HKA; Subkey: "Software\Classes\.stl\OpenWithProgids"; ValueType: string; V
 Root: HKA; Subkey: "Software\Classes\Applications\sSTLv.exe"; ValueType: string; ValueName: "FriendlyAppName"; ValueData: "sSTLv"; Flags: uninsdeletekey
 Root: HKA; Subkey: "Software\Classes\Applications\sSTLv.exe\SupportedTypes"; ValueType: string; ValueName: ".stl"; ValueData: ""
 Root: HKA; Subkey: "Software\Classes\Applications\sSTLv.exe\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\sSTLv.exe"" ""%1"""
-Root: HKA; Subkey: "Software\sSTLv\Capabilities"; ValueType: string; ValueName: "ApplicationName"; ValueData: "sSTLv"; Flags: uninsdeletekey
+Root: HKA; Subkey: "Software\sSTLv"; Flags: uninsdeletekey
+Root: HKA; Subkey: "Software\sSTLv\Capabilities"; ValueType: string; ValueName: "ApplicationName"; ValueData: "sSTLv"
 Root: HKA; Subkey: "Software\sSTLv\Capabilities"; ValueType: string; ValueName: "ApplicationDescription"; ValueData: "Simple STL Viewer"
 Root: HKA; Subkey: "Software\sSTLv\Capabilities\FileAssociations"; ValueType: string; ValueName: ".stl"; ValueData: "sSTLv.stl"
 Root: HKA; Subkey: "Software\RegisteredApplications"; ValueType: string; ValueName: "sSTLv"; ValueData: "Software\sSTLv\Capabilities"; Flags: uninsdeletevalue
+
+[UninstallDelete]
+; Folder mogl powstac przed instalacja (stary instalator), wtedy Inno sam go nie usuwa.
+Type: dirifempty; Name: "{app}"
 
 [Run]
 Filename: "ms-settings:defaultapps?registeredAppUser=sSTLv"; Description: "{cm:ChooseDefault}"; Flags: postinstall shellexec skipifsilent nowait; Check: NeedsDefaultChoice
