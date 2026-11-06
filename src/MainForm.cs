@@ -14,6 +14,7 @@ namespace StlPodglad
         int index = -1;
         bool error;
         string startPath;
+        string current;
 
         public MainForm(string path)
         {
@@ -34,11 +35,12 @@ namespace StlPodglad
         protected override void OnShown(EventArgs e)
         {
             base.OnShown(e);
+            view.Focus();
             if (startPath != null) OpenFile(startPath);
-            else GLView.TrimMemory();
+            else view.TrimAfterFirstPaint();
         }
 
-        // Motyw z ustawien Windows (AppsUseLightTheme: 1 = jasny, 0 lub brak = ciemny).
+        // Motyw z ustawien Windows: ciemny tylko gdy AppsUseLightTheme == 0, w pozostalych przypadkach jasny.
         static bool LoadTheme()
         {
             try
@@ -46,10 +48,10 @@ namespace StlPodglad
                 object v = Microsoft.Win32.Registry.GetValue(
                     @"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize",
                     "AppsUseLightTheme", null);
-                if (v is int && (int)v == 1) return false;
+                if (v is int && (int)v == 0) return true;
             }
             catch (Exception) { }
-            return true;
+            return false;
         }
 
         protected override void OnHandleCreated(EventArgs e)
@@ -90,34 +92,36 @@ namespace StlPodglad
             {
                 return string.Equals(f, path, StringComparison.OrdinalIgnoreCase);
             });
-            if (i < 0)
+            if (i < 0 && IsStl(path))
             {
                 list.Add(path);
                 i = list.Count - 1;
             }
             files = list;
             index = i;
-            LoadCurrent();
+            LoadPath(path);
         }
 
-        void LoadCurrent()
+        void LoadPath(string path)
         {
-            error = !view.LoadFile(files[index]);
+            current = path;
+            error = !view.LoadFile(path);
             UpdateTitle();
         }
 
         void Step(int dir)
         {
-            if (files.Count < 2) return;
-            index = (index + dir + files.Count) % files.Count;
-            LoadCurrent();
+            if (files.Count == 0 || (files.Count < 2 && index >= 0)) return;
+            if (index < 0) index = dir > 0 ? 0 : files.Count - 1;
+            else index = (index + dir + files.Count) % files.Count;
+            LoadPath(files[index]);
         }
 
         void UpdateTitle()
         {
-            if (index < 0) { Text = Nazwa; return; }
-            Text = Path.GetFileName(files[index]) + "  " + (index + 1) + "/" + files.Count
-                + "  " + (view.Mode3D ? "3D" : "2D") + (error ? "  błąd odczytu" : "");
+            if (current == null) { Text = Nazwa; return; }
+            Text = Path.GetFileName(current) + "  " + (index >= 0 ? (index + 1) + "/" + files.Count + "  " : "")
+                + (view.Mode3D ? "3D" : "2D") + (error ? "  błąd odczytu" : "");
         }
 
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
@@ -127,6 +131,7 @@ namespace StlPodglad
                 case Keys.Left: Step(-1); return true;
                 case Keys.Right: Step(1); return true;
                 case Keys.D:
+                    if ((msg.LParam.ToInt64() & 0x40000000) != 0) return true;
                     view.Mode3D = !view.Mode3D;
                     UpdateTitle();
                     return true;

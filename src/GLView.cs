@@ -27,6 +27,7 @@ namespace StlPodglad
         double pitch = BasePitch;
 
         int lastX, lastY;
+        bool trimmedOnce, trimPending;
 
         public GLView()
         {
@@ -34,7 +35,7 @@ namespace StlPodglad
                 | ControlStyles.Selectable, true);
             SetStyle(ControlStyles.OptimizedDoubleBuffer, false);
             AllowDrop = true;
-            TabStop = true;
+            TabStop = false;
         }
 
         protected override CreateParams CreateParams
@@ -101,17 +102,29 @@ namespace StlPodglad
             catch (UnauthorizedAccessException) { }
             catch (ArgumentException) { }
             catch (NotSupportedException) { }
+            catch (InvalidOperationException) { }
+            catch (OutOfMemoryException) { }
 
             ResetView();
-            TrimMemory();
+            GC.Collect();
+            if (!trimmedOnce)
+            {
+                trimmedOnce = true;
+                trimPending = true;
+            }
             return ok;
         }
 
-        public static void TrimMemory()
+        // Jednorazowe przyciecie working set po pierwszym namalowaniu (nie przy kazdej zmianie pliku).
+        public void TrimAfterFirstPaint()
         {
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-            GC.Collect();
+            trimmedOnce = true;
+            trimPending = true;
+            Invalidate();
+        }
+
+        static void TrimWorkingSet()
+        {
             Native.SetProcessWorkingSetSize(Native.GetCurrentProcess(), (IntPtr)(-1), (IntPtr)(-1));
         }
 
@@ -174,6 +187,11 @@ namespace StlPodglad
 
             if (list != 0) DrawModel(w, h);
             Native.SwapBuffers(hdc);
+            if (trimPending)
+            {
+                trimPending = false;
+                BeginInvoke(new MethodInvoker(TrimWorkingSet));
+            }
         }
 
         // Skala 2D (piksele na jednostke), tak by rzut bryly w stalym kacie zmiescil sie w oknie.

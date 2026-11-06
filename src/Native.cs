@@ -1,5 +1,6 @@
 using System;
 using System.Runtime.InteropServices;
+using System.Security;
 
 namespace StlPodglad
 {
@@ -18,6 +19,7 @@ namespace StlPodglad
         public uint dwLayerMask, dwVisibleMask, dwDamageMask;
     }
 
+    [SuppressUnmanagedCodeSecurity]
     static class Native
     {
         public const int GL_DEPTH_TEST = 0x0B71;
@@ -40,6 +42,9 @@ namespace StlPodglad
         public const int GL_COLOR_BUFFER_BIT = 0x4000;
         public const int GL_DEPTH_BUFFER_BIT = 0x0100;
         public const int GL_FLAT = 0x1D00;
+        public const int GL_FLOAT = 0x1406;
+        public const int GL_VERTEX_ARRAY = 0x8074;
+        public const int GL_NORMAL_ARRAY = 0x8075;
 
         const string GL = "opengl32.dll";
 
@@ -65,10 +70,11 @@ namespace StlPodglad
         [DllImport(GL)] public static extern void glNewList(uint list, int mode);
         [DllImport(GL)] public static extern void glEndList();
         [DllImport(GL)] public static extern void glCallList(uint list);
-        [DllImport(GL)] public static extern void glBegin(int mode);
-        [DllImport(GL)] public static extern void glEnd();
-        [DllImport(GL)] public static extern void glNormal3f(float x, float y, float z);
-        [DllImport(GL)] public static extern void glVertex3f(float x, float y, float z);
+        [DllImport(GL)] public static extern void glEnableClientState(int array);
+        [DllImport(GL)] public static extern void glDisableClientState(int array);
+        [DllImport(GL)] public static extern void glVertexPointer(int size, int type, int stride, IntPtr p);
+        [DllImport(GL)] public static extern void glNormalPointer(int type, int stride, IntPtr p);
+        [DllImport(GL)] public static extern void glDrawArrays(int mode, int first, int count);
 
         [DllImport(GL)] public static extern IntPtr wglCreateContext(IntPtr hdc);
         [DllImport(GL)] public static extern bool wglMakeCurrent(IntPtr hdc, IntPtr hglrc);

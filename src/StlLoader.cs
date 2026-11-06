@@ -1,6 +1,7 @@
 using System;
 using System.Globalization;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace StlPodglad
@@ -15,11 +16,42 @@ namespace StlPodglad
     // Czyta STL strumieniowo prosto do listy wyswietlania OpenGL (kontekst musi byc aktywny).
     static class StlLoader
     {
-        class Acc
+        class Acc : IDisposable
         {
+            const int ChunkTris = 16384;
+            readonly float[] verts = new float[ChunkTris * 9];
+            readonly float[] norms = new float[ChunkTris * 9];
+            GCHandle hv, hn;
+            int pending;
             public int Count;
             public float MinX = float.MaxValue, MinY = float.MaxValue, MinZ = float.MaxValue;
             public float MaxX = float.MinValue, MaxY = float.MinValue, MaxZ = float.MinValue;
+
+            public Acc()
+            {
+                hv = GCHandle.Alloc(verts, GCHandleType.Pinned);
+                hn = GCHandle.Alloc(norms, GCHandleType.Pinned);
+                Native.glEnableClientState(Native.GL_VERTEX_ARRAY);
+                Native.glEnableClientState(Native.GL_NORMAL_ARRAY);
+                Native.glVertexPointer(3, Native.GL_FLOAT, 0, hv.AddrOfPinnedObject());
+                Native.glNormalPointer(Native.GL_FLOAT, 0, hn.AddrOfPinnedObject());
+            }
+
+            // Dane tablic sa kopiowane do listy w chwili glDrawArrays (kompilacji listy).
+            public void Flush()
+            {
+                if (pending == 0) return;
+                Native.glDrawArrays(Native.GL_TRIANGLES, 0, pending * 3);
+                pending = 0;
+            }
+
+            public void Dispose()
+            {
+                Native.glDisableClientState(Native.GL_VERTEX_ARRAY);
+                Native.glDisableClientState(Native.GL_NORMAL_ARRAY);
+                hv.Free();
+                hn.Free();
+            }
 
             static bool Bad(float v)
             {
@@ -43,10 +75,12 @@ namespace StlPodglad
                     if (nx * nx + ny * ny + nz * nz < 1e-30f) { nx = 0; ny = 0; nz = 1; }
                 }
 
-                Native.glNormal3f(nx, ny, nz);
-                Native.glVertex3f(ax, ay, az);
-                Native.glVertex3f(bx, by, bz);
-                Native.glVertex3f(cx, cy, cz);
+                int o = pending * 9;
+                for (int i = 0; i < 9; i += 3) { norms[o + i] = nx; norms[o + i + 1] = ny; norms[o + i + 2] = nz; }
+                verts[o] = ax; verts[o + 1] = ay; verts[o + 2] = az;
+                verts[o + 3] = bx; verts[o + 4] = by; verts[o + 5] = bz;
+                verts[o + 6] = cx; verts[o + 7] = cy; verts[o + 8] = cz;
+                if (++pending == ChunkTris) Flush();
 
                 Extend(ax, ay, az);
                 Extend(bx, by, bz);
@@ -70,18 +104,22 @@ namespace StlPodglad
         {
             uint list = Native.glGenLists(1);
             if (list == 0) throw new InvalidOperationException("glGenLists");
-            Acc acc = new Acc();
+            Acc acc = null;
             bool ok = false;
             try
             {
                 Native.glNewList(list, Native.GL_COMPILE);
                 try
                 {
-                    Native.glBegin(Native.GL_TRIANGLES);
-                    try { ReadFile(path, acc); }
-                    finally { Native.glEnd(); }
+                    acc = new Acc();
+                    ReadFile(path, acc);
+                    acc.Flush();
                 }
-                finally { Native.glEndList(); }
+                finally
+                {
+                    if (acc != null) acc.Dispose();
+                    Native.glEndList();
+                }
 
                 if (acc.Count == 0) throw new InvalidDataException("brak trojkatow");
                 ok = true;
@@ -107,8 +145,13 @@ namespace StlPodglad
 
                 byte[] head = new byte[84];
                 int got = ReadFull(fs, head, 0, 84);
-                bool solid = got >= 5 && head[0] == (byte)'s' && head[1] == (byte)'o' && head[2] == (byte)'l'
-                    && head[3] == (byte)'i' && head[4] == (byte)'d';
+
+                // "solid" po opcjonalnym BOM UTF-8 i bialych znakach
+                int off = 0;
+                if (got >= 3 && head[0] == 0xEF && head[1] == 0xBB && head[2] == 0xBF) off = 3;
+                while (off < got && head[off] <= 0x20) off++;
+                bool solid = got >= off + 5 && head[off] == (byte)'s' && head[off + 1] == (byte)'o'
+                    && head[off + 2] == (byte)'l' && head[off + 3] == (byte)'i' && head[off + 4] == (byte)'d';
 
                 long n = 0;
                 bool sizeMatches = false;
@@ -121,7 +164,13 @@ namespace StlPodglad
                 if (solid && !sizeMatches)
                 {
                     fs.Position = 0;
-                    ReadAscii(fs, acc);
+                    try { ReadAscii(fs, acc); }
+                    catch (InvalidDataException) { if (acc.Count > 0) throw; }
+                    if (acc.Count > 0) return;
+                    // Binarny plik z naglowkiem "solid" i nadmiarowymi bajtami na koncu.
+                    if (n == 0 || size < 84 + 50 * n) throw new InvalidDataException("brak trojkatow");
+                    fs.Position = 84;
+                    ReadBinary(fs, n, acc);
                     return;
                 }
 
@@ -179,7 +228,7 @@ namespace StlPodglad
             float nx = 0, ny = 0, nz = 0;
             float[] v = new float[9];
             int k = 0;
-            using (StreamReader r = new StreamReader(s, Encoding.ASCII, false, 65536))
+            using (StreamReader r = new StreamReader(s, Encoding.UTF8, true, 65536))
             {
                 string line;
                 while ((line = r.ReadLine()) != null)
