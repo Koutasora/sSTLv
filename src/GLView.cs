@@ -488,7 +488,6 @@ namespace StlPodglad
             ovDark = dark;
 
             Color fill2, ink2, fillH, inkH;
-            Color fill3 = Color.FromArgb(204, 0x3A, 0x6E, 0xA5);
             if (dark)
             {
                 fill2 = Color.FromArgb(36, 255, 255, 255); ink2 = Color.FromArgb(235, 255, 255, 255);
@@ -506,7 +505,7 @@ namespace StlPodglad
                 indPot = NextPot(indSize);
                 float r = (float)(6 * k);
                 indTex[0] = MakeTexture("2D", true, (float)(15 * k), fill2, ink2, indSize, indSize, r, indPot, indPot);
-                indTex[1] = MakeTexture("3D", true, (float)(15 * k), fill3, Color.White, indSize, indSize, r, indPot, indPot);
+                indTex[1] = MakeTexture("3D", true, (float)(15 * k), fill2, ink2, indSize, indSize, r, indPot, indPot);
 
                 float em = (float)(12 * k);
                 RectangleF tb;
