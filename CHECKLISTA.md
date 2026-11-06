@@ -23,6 +23,8 @@
 - [x] Kółko: zoom, działa po najechaniu bez klikania
 - [x] Reset widoku przy zmianie pliku
 - [x] Ciemny motyw i ciemny pasek tytułu
+- [x] Ikona programu w exe i na pasku tytułu okna, generator ikona/generuj_ikone.ps1 (napis sSTLv, w 16-32 px litera s)
+- [ ] Ikona na plikach .stl w Eksploratorze po instalacji
 - [x] Tytuł: nazwa, indeks/liczba, tryb; brak menu, pasków i napisów w oknie
 - [x] Wygląd: światła, kontrast na ciemnym tle
 

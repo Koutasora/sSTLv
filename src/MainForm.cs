@@ -20,6 +20,7 @@ namespace StlPodglad
         {
             startPath = path;
             Text = Nazwa;
+            try { Icon = System.Drawing.Icon.ExtractAssociatedIcon(Application.ExecutablePath); } catch (Exception) { }
             ClientSize = new System.Drawing.Size(960, 640);
             StartPosition = FormStartPosition.CenterScreen;
             AllowDrop = true;
