@@ -50,6 +50,8 @@ Brak innych klawiszy.
 
 Mały półprzezroczysty kwadrat w lewym górnym rogu pokazuje bieżący tryb: "2D" (neutralny) albo "3D" (niebieski). Tylko wyświetla, nie reaguje na mysz.
 
+Na dole widoku jest półprzezroczysta podpowiedź: "Press D to change view | Press ESC to quit" (chowa się, gdy okno jest za wąskie).
+
 ## Mysz
 
 - Kółko: zoom do kursora (w 2D i w 3D).

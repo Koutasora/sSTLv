@@ -228,7 +228,7 @@ namespace StlPodglad
         protected override void OnHandleDestroyed(EventArgs e)
         {
             ReleaseModel();
-            if (hrc != IntPtr.Zero) DeleteIndicator();
+            if (hrc != IntPtr.Zero) DeleteOverlays();
             if (hrc != IntPtr.Zero)
             {
                 Native.wglMakeCurrent(IntPtr.Zero, IntPtr.Zero);
@@ -264,7 +264,7 @@ namespace StlPodglad
             Native.glClear(Native.GL_COLOR_BUFFER_BIT | Native.GL_DEPTH_BUFFER_BIT);
 
             if (vertCount != 0) DrawModel(w, h);
-            DrawIndicator(w, h);
+            DrawOverlays(w, h);
             Native.SwapBuffers(hdc);
             if (trimPending)
             {
@@ -362,71 +362,88 @@ namespace StlPodglad
             DrawBuffer();
         }
 
-        // Wskaznik trybu w lewym gornym rogu (2D / 3D): tekstura RGBA narysowana raz przez GDI+,
-        // wyswietlana 1:1 jako jeden czworokat. Tylko wyswietlanie, bez obslugi myszy.
+        // Nakladki (wskaznik trybu "2D"/"3D" i podpowiedz na dole): kazda to tekstura RGBA narysowana raz
+        // przez GDI+, wyswietlana 1:1 jako jeden czworokat. Tylko wyswietlanie, bez obslugi myszy.
+        const string HintText = "Press D to change view | Press ESC to quit";
+
         uint[] indTex = new uint[2];
         int indSize, indPot;
-        double indScale;
-        bool indDark;
+        uint hintTex;
+        int hintW, hintH, hintPotW, hintPotH;
+        double ovScale;
+        bool ovDark;
 
-        static System.Drawing.Drawing2D.GraphicsPath RoundedSquare(float size, float r)
+        static System.Drawing.Drawing2D.GraphicsPath RoundedRect(float w, float h, float r)
         {
             System.Drawing.Drawing2D.GraphicsPath gp = new System.Drawing.Drawing2D.GraphicsPath();
             float d = r * 2;
             gp.AddArc(0, 0, d, d, 180, 90);
-            gp.AddArc(size - d, 0, d, d, 270, 90);
-            gp.AddArc(size - d, size - d, d, d, 0, 90);
-            gp.AddArc(0, size - d, d, d, 90, 90);
+            gp.AddArc(w - d, 0, d, d, 270, 90);
+            gp.AddArc(w - d, h - d, d, d, 0, 90);
+            gp.AddArc(0, h - d, d, d, 90, 90);
             gp.CloseFigure();
             return gp;
         }
 
-        static FontFamily IndicatorFont(out FontStyle style)
+        static FontFamily OverlayFont(bool semibold, out FontStyle style)
         {
             style = FontStyle.Regular;
-            try { return new FontFamily("Segoe UI Semibold"); }
-            catch (ArgumentException) { }
-            style = FontStyle.Bold;
+            if (semibold)
+            {
+                try { return new FontFamily("Segoe UI Semibold"); }
+                catch (ArgumentException) { }
+                style = FontStyle.Bold;
+            }
             try { return new FontFamily("Segoe UI"); }
             catch (ArgumentException) { }
             return FontFamily.GenericSansSerif;
         }
 
-        uint MakeIndicatorTexture(string text, bool is3D, double k, int size, int pot)
+        static System.Drawing.Drawing2D.GraphicsPath TextPath(string text, bool semibold, float em)
         {
-            Color fill, ink;
-            if (is3D) { fill = Color.FromArgb(204, 0x3A, 0x6E, 0xA5); ink = Color.White; }
-            else if (dark) { fill = Color.FromArgb(36, 255, 255, 255); ink = Color.FromArgb(235, 255, 255, 255); }
-            else { fill = Color.FromArgb(20, 0, 0, 0); ink = Color.FromArgb(0x30, 0x30, 0x30); }
+            FontStyle style;
+            FontFamily fam = OverlayFont(semibold, out style);
+            System.Drawing.Drawing2D.GraphicsPath tp = new System.Drawing.Drawing2D.GraphicsPath();
+            tp.AddString(text, fam, (int)style, em, new PointF(0, 0), StringFormat.GenericTypographic);
+            return tp;
+        }
 
-            byte[] px = new byte[pot * pot * 4];
-            using (Bitmap bmp = new Bitmap(pot, pot, System.Drawing.Imaging.PixelFormat.Format32bppArgb))
+        static int NextPot(int n)
+        {
+            int p = 1;
+            while (p < n) p *= 2;
+            return p;
+        }
+
+        // Tworzy teksture: zaokraglony prostokat w x h (wypelnienie fill) z wysrodkowanym tekstem (kolor ink).
+        static uint MakeTexture(string text, bool semibold, float em, Color fill, Color ink,
+            int w, int h, float radius, int potW, int potH)
+        {
+            byte[] px = new byte[potW * potH * 4];
+            using (Bitmap bmp = new Bitmap(potW, potH, System.Drawing.Imaging.PixelFormat.Format32bppArgb))
             {
                 using (Graphics g = Graphics.FromImage(bmp))
                 {
                     g.Clear(Color.Transparent);
                     g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
                     g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias;
-                    using (System.Drawing.Drawing2D.GraphicsPath sq = RoundedSquare(size, (float)(6 * k)))
+                    using (System.Drawing.Drawing2D.GraphicsPath rr = RoundedRect(w, h, radius))
                     using (SolidBrush fb = new SolidBrush(fill))
-                        g.FillPath(fb, sq);
+                        g.FillPath(fb, rr);
 
-                    FontStyle style;
-                    FontFamily fam = IndicatorFont(out style);
-                    using (System.Drawing.Drawing2D.GraphicsPath tp = new System.Drawing.Drawing2D.GraphicsPath())
+                    using (System.Drawing.Drawing2D.GraphicsPath tp = TextPath(text, semibold, em))
                     {
-                        tp.AddString(text, fam, (int)style, (float)(15 * k), new PointF(0, 0), StringFormat.GenericTypographic);
                         RectangleF tb = tp.GetBounds();
                         using (System.Drawing.Drawing2D.Matrix m = new System.Drawing.Drawing2D.Matrix())
                         {
-                            m.Translate(size / 2f - (tb.Left + tb.Width / 2f), size / 2f - (tb.Top + tb.Height / 2f));
+                            m.Translate(w / 2f - (tb.Left + tb.Width / 2f), h / 2f - (tb.Top + tb.Height / 2f));
                             tp.Transform(m);
                         }
                         using (SolidBrush ib = new SolidBrush(ink))
                             g.FillPath(ib, tp);
                     }
                 }
-                System.Drawing.Imaging.BitmapData bd = bmp.LockBits(new Rectangle(0, 0, pot, pot),
+                System.Drawing.Imaging.BitmapData bd = bmp.LockBits(new Rectangle(0, 0, potW, potH),
                     System.Drawing.Imaging.ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
                 Marshal.Copy(bd.Scan0, px, 0, px.Length);
                 bmp.UnlockBits(bd);
@@ -447,53 +464,85 @@ namespace StlPodglad
             GCHandle pin = GCHandle.Alloc(px, GCHandleType.Pinned);
             try
             {
-                Native.glTexImage2D(Native.GL_TEXTURE_2D, 0, Native.GL_RGBA, pot, pot, 0, Native.GL_RGBA,
+                Native.glTexImage2D(Native.GL_TEXTURE_2D, 0, Native.GL_RGBA, potW, potH, 0, Native.GL_RGBA,
                     Native.GL_UNSIGNED_BYTE, pin.AddrOfPinnedObject());
             }
             finally { pin.Free(); }
             return id[0];
         }
 
-        void DeleteIndicator()
+        void DeleteOverlays()
         {
-            if (indTex[0] != 0 || indTex[1] != 0)
-            {
-                Native.glDeleteTextures(2, indTex);
-                indTex[0] = 0; indTex[1] = 0;
-            }
+            uint[] all = new uint[] { indTex[0], indTex[1], hintTex };
+            Native.glDeleteTextures(3, all);
+            indTex[0] = 0; indTex[1] = 0; hintTex = 0;
         }
 
-        void EnsureIndicator()
+        void EnsureOverlays()
         {
             double k = 1.0;
             using (Graphics g = CreateGraphics()) k = g.DpiX / 96.0;
-            if (indTex[0] != 0 && indScale == k && indDark == dark) return;
-            DeleteIndicator();
-            indScale = k;
-            indDark = dark;
-            indSize = (int)Math.Round(36 * k);
-            indPot = 1;
-            while (indPot < indSize) indPot *= 2;
+            if (indTex[0] != 0 && ovScale == k && ovDark == dark) return;
+            DeleteOverlays();
+            ovScale = k;
+            ovDark = dark;
+
+            Color fill2, ink2, fillH, inkH;
+            Color fill3 = Color.FromArgb(204, 0x3A, 0x6E, 0xA5);
+            if (dark)
+            {
+                fill2 = Color.FromArgb(36, 255, 255, 255); ink2 = Color.FromArgb(235, 255, 255, 255);
+                fillH = Color.FromArgb(26, 255, 255, 255); inkH = Color.FromArgb(191, 255, 255, 255);
+            }
+            else
+            {
+                fill2 = Color.FromArgb(20, 0, 0, 0); ink2 = Color.FromArgb(0x30, 0x30, 0x30);
+                fillH = Color.FromArgb(15, 0, 0, 0); inkH = Color.FromArgb(217, 0x30, 0x30, 0x30);
+            }
+
             try
             {
-                indTex[0] = MakeIndicatorTexture("2D", false, k, indSize, indPot);
-                indTex[1] = MakeIndicatorTexture("3D", true, k, indSize, indPot);
+                indSize = (int)Math.Round(36 * k);
+                indPot = NextPot(indSize);
+                float r = (float)(6 * k);
+                indTex[0] = MakeTexture("2D", true, (float)(15 * k), fill2, ink2, indSize, indSize, r, indPot, indPot);
+                indTex[1] = MakeTexture("3D", true, (float)(15 * k), fill3, Color.White, indSize, indSize, r, indPot, indPot);
+
+                float em = (float)(12 * k);
+                RectangleF tb;
+                using (System.Drawing.Drawing2D.GraphicsPath tp = TextPath(HintText, false, em))
+                    tb = tp.GetBounds();
+                hintW = (int)Math.Ceiling(tb.Width + 16 * k);
+                hintH = (int)Math.Ceiling(tb.Height + 8 * k);
+                hintPotW = NextPot(hintW);
+                hintPotH = NextPot(hintH);
+                hintTex = MakeTexture(HintText, false, em, fillH, inkH, hintW, hintH, r, hintPotW, hintPotH);
             }
             catch (Exception)
             {
-                DeleteIndicator();
+                DeleteOverlays();
             }
         }
 
-        void DrawIndicator(int w, int h)
+        static void Quad(uint tex, float x, float y, int w, int h, int potW, int potH)
         {
-            EnsureIndicator();
+            float u = (float)w / potW, v = (float)h / potH;
+            Native.glBindTexture(Native.GL_TEXTURE_2D, tex);
+            Native.glBegin(Native.GL_QUADS);
+            Native.glTexCoord2f(0, 0); Native.glVertex2f(x, y);
+            Native.glTexCoord2f(u, 0); Native.glVertex2f(x + w, y);
+            Native.glTexCoord2f(u, v); Native.glVertex2f(x + w, y + h);
+            Native.glTexCoord2f(0, v); Native.glVertex2f(x, y + h);
+            Native.glEnd();
+        }
+
+        void DrawOverlays(int w, int h)
+        {
+            EnsureOverlays();
             uint tex = indTex[mode3D ? 1 : 0];
             if (tex == 0) return;
 
-            float x0 = (float)Math.Round(10 * indScale), y0 = x0;
-            float s = indSize;
-            float u = (float)indSize / indPot;
+            float margin = (float)Math.Round(10 * ovScale);
 
             Native.glPushAttrib(Native.GL_ENABLE_BIT | Native.GL_CURRENT_BIT | Native.GL_COLOR_BUFFER_BIT);
             Native.glDisable(Native.GL_LIGHTING);
@@ -508,15 +557,11 @@ namespace StlPodglad
             Native.glMatrixMode(Native.GL_MODELVIEW);
             Native.glPushMatrix();
             Native.glLoadIdentity();
-
-            Native.glBindTexture(Native.GL_TEXTURE_2D, tex);
             Native.glColor4f(1f, 1f, 1f, 1f);
-            Native.glBegin(Native.GL_QUADS);
-            Native.glTexCoord2f(0, 0); Native.glVertex2f(x0, y0);
-            Native.glTexCoord2f(u, 0); Native.glVertex2f(x0 + s, y0);
-            Native.glTexCoord2f(u, u); Native.glVertex2f(x0 + s, y0 + s);
-            Native.glTexCoord2f(0, u); Native.glVertex2f(x0, y0 + s);
-            Native.glEnd();
+
+            Quad(tex, margin, margin, indSize, indSize, indPot, indPot);
+            if (hintTex != 0 && w >= hintW + 2 * margin)
+                Quad(hintTex, (float)Math.Round((w - hintW) / 2.0), h - margin - hintH, hintW, hintH, hintPotW, hintPotH);
 
             Native.glPopMatrix();
             Native.glMatrixMode(Native.GL_PROJECTION);
