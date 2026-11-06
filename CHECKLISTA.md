@@ -5,22 +5,28 @@
 - [x] build.cmd (csc, C# 5), SetProcessDPIAware
 - [x] Pliki testowe (test\generuj.py)
 
+## Sprawdzone w działaniu (AMD Radeon Vega 11, Windows 11, ciemny motyw)
+- [x] Rysowanie tylko na zdarzenia, 0% CPU w spoczynku (0 ms CPU w 10 s)
+- [x] Niskie zużycie RAM: working set 7-15 MB, także z plikiem 1 mln trójkątów
+- [x] Wczytywanie do bufora VBO; plik 50 MB (1 mln trójkątów) otwiera się w ok. 0,5 s
+- [x] Binarny i ASCII STL, normalne liczone przy zerowych
+- [x] Uszkodzony / pusty plik: tytuł "błąd odczytu", pusty widok, bez wyjątku
+- [x] Plik z argumentu wiersza poleceń
+- [x] Lewo / Prawo: poprzedni / następny .stl (naturalne sortowanie, zapętlenie), właściwy model po zmianie pliku
+- [x] D: przełączanie 2D / 3D z resetem widoku
+- [x] Esc zamyka okno
+- [x] 2D: rzut ortogonalny, stały kąt
+- [x] 3D: perspektywa, obrót lewym przyciskiem
+- [x] Kółko: zoom, działa po najechaniu bez klikania
+- [x] Reset widoku przy zmianie pliku
+- [x] Ciemny motyw i ciemny pasek tytułu
+- [x] Tytuł: nazwa, indeks/liczba, tryb; brak menu, pasków i napisów w oknie
+- [x] Wygląd: światła, kontrast na ciemnym tle
+
 ## Do sprawdzenia w działaniu
-- [ ] Rysowanie tylko na zdarzenia, 0% CPU w spoczynku
-- [ ] Niskie zużycie RAM, przycięcie working set raz po pierwszym namalowaniu
-- [ ] Wczytywanie do bufora VBO (z awaryjnym rysowaniem z tablic klienta) (szybkie dla dużych plików)
-- [ ] Binarny i ASCII STL (także z BOM i białymi znakami przed "solid"), normalne liczone przy zerowych
-- [ ] Binarny plik z nagłówkiem "solid" i nadmiarowymi bajtami
-- [ ] Uszkodzony / pusty plik: tytuł "błąd odczytu", pusty widok, bez wyjątku
-- [ ] Plik z argumentu wiersza poleceń (także nie-.stl) i drag & drop
-- [ ] Lewo / Prawo: poprzedni / następny .stl (naturalne sortowanie, zapętlenie)
-- [ ] D: przełączanie 2D / 3D z resetem widoku w obu kierunkach; auto-repeat D ignorowany
-- [ ] Esc zamyka okno; brak innych klawiszy
-- [ ] 2D: rzut ortogonalny, stały kąt, przesuwanie dowolnym przyciskiem
-- [ ] 3D: perspektywa, obrót lewym, przesuwanie prawym / środkowym
-- [ ] Kółko: zoom do kursora w 2D i 3D, działa po najechaniu bez klikania
-- [ ] Reset widoku przy zmianie pliku
-- [ ] Motyw z ustawień Windows (ciemny tylko gdy AppsUseLightTheme = 0)
-- [ ] Ciemny pasek tytułu w trybie ciemnym
-- [ ] Tytuł: nazwa, indeks/liczba, tryb; brak menu, pasków i napisów w oknie
-- [ ] Wygląd: światła, oświetlenie dwustronne, kontrast na obu tłach
+- [ ] Jasny motyw (AppsUseLightTheme = 1)
+- [ ] Drag & drop pliku na okno
+- [ ] Plik nie-.stl z argumentu
+- [ ] ASCII z BOM / białymi znakami przed "solid"; binarny z nagłówkiem "solid" i nadmiarowymi bajtami
+- [ ] Przesuwanie w 2D i 3D (prawy / środkowy przycisk)
+- [ ] Auto-repeat D ignorowany
