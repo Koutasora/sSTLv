@@ -30,9 +30,11 @@
 - [x] Wygląd: światła, kontrast na ciemnym tle
 
 ## Do sprawdzenia w działaniu
-- [ ] sSTLv-instalator.exe: instalacja bez administratora, wpisy HKCU, wpis w Aplikacjach zainstalowanych, okno końcowe
-- [ ] Instalator: odmowa gdy sSTLv działa; ponowna instalacja (idempotentna)
-- [ ] Odinstalowanie z Ustawień / `/odinstaluj`: usuwa wpisy, exe i folder (także instalator)
+- [x] sSTLv-instalator.exe: instalacja bez administratora, wpisy HKCU, wpis w Aplikacjach zainstalowanych, okno końcowe (LAB)
+- [x] Instalator: ponowna instalacja na istniejącej (LAB)
+- [ ] Instalator: odmowa gdy sSTLv działa
+- [x] `/odinstaluj` (polecenie z wpisu Aplikacji zainstalowanych): usuwa wpisy, exe i folder razem z instalatorem (LAB)
+- [ ] Odinstalowanie kliknięte w Ustawieniach
 - [ ] Wersja przenośna sSTLv.exe nie zapisuje nic poza plikiem
 - [x] instaluj.cmd: kopia do %LOCALAPPDATA%, wpisy HKCU, wersja w komunikacie, strona sSTLv w Aplikacjach domyślnych (sprawdzone na LAB)
 - [x] odinstaluj.cmd usuwa tylko własne wpisy i folder (sprawdzone na LAB)
