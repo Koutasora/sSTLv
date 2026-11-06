@@ -20,12 +20,18 @@ namespace SstlvInstalator
 
         static string InstallDir()
         {
-            return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), @"Programs\sSTLv");
+            string dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), @"Programs\sSTLv");
+            if (!Path.IsPathRooted(dir)) throw new InvalidOperationException("Nie można ustalić folderu LocalAppData.");
+            dir = Path.GetFullPath(dir);
+            if (!dir.EndsWith(@"\Programs\sSTLv", StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("Nieoczekiwany folder instalacji: " + dir);
+            return dir;
         }
 
         [STAThread]
         static int Main(string[] args)
         {
+            Application.EnableVisualStyles();
             try
             {
                 bool uninstall = args.Length > 0 && string.Equals(args[0], "/odinstaluj", StringComparison.OrdinalIgnoreCase);
@@ -193,6 +199,7 @@ namespace SstlvInstalator
                 psi.CreateNoWindow = true;
                 psi.UseShellExecute = false;
                 psi.WindowStyle = ProcessWindowStyle.Hidden;
+                psi.WorkingDirectory = Path.GetTempPath();
                 Process.Start(psi);
             }
             return 0;

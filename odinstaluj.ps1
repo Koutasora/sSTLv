@@ -1,4 +1,4 @@
-# Odinstalowanie sSTLv: usuwa tylko wpisy HKCU i folder utworzone przez instaluj.ps1.
+# Odinstalowanie sSTLv: usuwa wpisy HKCU i folder utworzone przez instaluj.ps1 lub sSTLv-instalator.exe.
 # Plik zapisany w ASCII (Windows PowerShell 5.1 czyta skrypty bez BOM jako ANSI).
 $ErrorActionPreference = 'Stop'
 

@@ -5,7 +5,7 @@
 - [x] build.cmd (csc, C# 5), SetProcessDPIAware
 - [x] Pliki testowe (test\generuj.py)
 - [x] Nazwa sSTLv, wersja 1.0.0.0 (AssemblyInfo.cs)
-- [x] Instalator sSTLv-instalator.exe (osadzone sSTLv.exe, manifest asInvoker) - tylko kompilacja
+- [x] Instalator sSTLv-instalator.exe (osadzone sSTLv.exe, manifest asInvoker, DPI)
 - [x] Skrypty instaluj / odinstaluj napisane (składnia sprawdzona parserem PowerShell)
 
 ## Sprawdzone w działaniu (AMD Radeon Vega 11, Windows 11, ciemny motyw)

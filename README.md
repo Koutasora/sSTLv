@@ -14,7 +14,7 @@ Wynik: `bin\sSTLv.exe` oraz `bin\sSTLv-instalator.exe` (zawiera osadzone sSTLv.e
 Z GitHub Releases:
 
 - `sSTLv-instalator.exe`: instaluje program dla bieżącego użytkownika (bez administratora). Odinstalowanie:
-  Ustawienia > Aplikacje > sSTLv (albo `sSTLv-instalator.exe /odinstaluj`).
+  Ustawienia > Aplikacje > Zainstalowane aplikacje > sSTLv (albo `sSTLv-instalator.exe /odinstaluj`).
 - `sSTLv-portable.exe`: wersja przenośna, wystarczy uruchomić, nic nie instaluje ani nie zapisuje.
 
 Pliki nie są podpisane, więc SmartScreen może ostrzec: "Więcej informacji" > "Uruchom mimo to".
