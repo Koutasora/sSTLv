@@ -55,4 +55,4 @@ zerowe normalne, plik uszkodzony, plik pusty).
 
 ## Ikona
 
-`ikona\sSTLv.ico` jest generowana skryptem `python ikona\generuj_ikone.py` (czysty Python, bez bibliotek) i wbudowywana w exe przez build.cmd.
+`ikona\sSTLv.ico` jest generowana skryptem `powershell -ExecutionPolicy Bypass -File ikona\generuj_ikone.ps1` (System.Drawing, bez bibliotek) i wbudowywana w exe przez build.cmd.
