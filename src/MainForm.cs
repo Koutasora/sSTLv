@@ -37,6 +37,7 @@ namespace StlPodglad
         {
             base.OnShown(e);
             view.Focus();
+            view.StartHintTimer();
             if (startPath != null) OpenFile(startPath);
             else view.TrimAfterFirstPaint();
         }

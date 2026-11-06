@@ -227,7 +227,14 @@ namespace StlPodglad
 
         protected override void OnHandleDestroyed(EventArgs e)
         {
+            if (hintTimer != null)
+            {
+                hintTimer.Stop();
+                hintTimer.Dispose();
+                hintTimer = null;
+            }
             ReleaseModel();
+            if (hrc != IntPtr.Zero) DeleteOverlays();
             if (hrc != IntPtr.Zero)
             {
                 Native.wglMakeCurrent(IntPtr.Zero, IntPtr.Zero);
@@ -263,6 +270,7 @@ namespace StlPodglad
             Native.glClear(Native.GL_COLOR_BUFFER_BIT | Native.GL_DEPTH_BUFFER_BIT);
 
             if (vertCount != 0) DrawModel(w, h);
+            DrawOverlays(w, h);
             Native.SwapBuffers(hdc);
             if (trimPending)
             {
@@ -358,6 +366,340 @@ namespace StlPodglad
             if (dark) Native.glColor3f(0.62f, 0.68f, 0.76f);
             else Native.glColor3f(0.36f, 0.43f, 0.53f);
             DrawBuffer();
+        }
+
+        // Nakladki (wskaznik trybu "2D"/"3D" i podpowiedz na dole): kazda to tekstura RGBA narysowana raz
+        // przez GDI+, wyswietlana 1:1 jako jeden czworokat. Tylko wyswietlanie, bez obslugi myszy.
+        const string HintText = "Press D to change view | Press ESC to quit";
+
+        uint[] indTex = new uint[2];
+        int indSize, indPot;
+        uint hintTex;
+        int hintW, hintH, hintPotW, hintPotH;
+        double ovScale;
+        System.Windows.Forms.Timer hintTimer;
+        bool hintGone, hintFading;
+        int hintFadeStart;
+        float hintAlpha = 1f;
+        bool ovDark;
+
+        static System.Drawing.Drawing2D.GraphicsPath RoundedRect(float w, float h, float r)
+        {
+            System.Drawing.Drawing2D.GraphicsPath gp = new System.Drawing.Drawing2D.GraphicsPath();
+            float d = r * 2;
+            gp.AddArc(0, 0, d, d, 180, 90);
+            gp.AddArc(w - d, 0, d, d, 270, 90);
+            gp.AddArc(w - d, h - d, d, d, 0, 90);
+            gp.AddArc(0, h - d, d, d, 90, 90);
+            gp.CloseFigure();
+            return gp;
+        }
+
+        static FontFamily OverlayFont(bool semibold, out FontStyle style)
+        {
+            style = FontStyle.Regular;
+            if (semibold)
+            {
+                try { return new FontFamily("Segoe UI Semibold"); }
+                catch (ArgumentException) { }
+                style = FontStyle.Bold;
+            }
+            try { return new FontFamily("Segoe UI"); }
+            catch (ArgumentException) { }
+            return FontFamily.GenericSansSerif;
+        }
+
+        static System.Drawing.Drawing2D.GraphicsPath TextPath(string text, bool semibold, float em)
+        {
+            FontStyle style;
+            FontFamily fam = OverlayFont(semibold, out style);
+            System.Drawing.Drawing2D.GraphicsPath tp = new System.Drawing.Drawing2D.GraphicsPath();
+            tp.AddString(text, fam, (int)style, em, new PointF(0, 0), StringFormat.GenericTypographic);
+            return tp;
+        }
+
+        static int NextPot(int n)
+        {
+            int p = 1;
+            while (p < n) p *= 2;
+            return p;
+        }
+
+        // Rysuje przez GDI+ do bitmapy potW x potH i wgrywa ja jako teksture RGBA.
+        static uint BuildTexture(int potW, int potH, Action<Graphics> paint)
+        {
+            byte[] px = new byte[potW * potH * 4];
+            using (Bitmap bmp = new Bitmap(potW, potH, System.Drawing.Imaging.PixelFormat.Format32bppArgb))
+            {
+                using (Graphics g = Graphics.FromImage(bmp))
+                {
+                    g.Clear(Color.Transparent);
+                    g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+                    g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias;
+                    paint(g);
+                }
+                System.Drawing.Imaging.BitmapData bd = bmp.LockBits(new Rectangle(0, 0, potW, potH),
+                    System.Drawing.Imaging.ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+                Marshal.Copy(bd.Scan0, px, 0, px.Length);
+                bmp.UnlockBits(bd);
+            }
+            // BGRA (GDI+) -> RGBA
+            for (int i = 0; i < px.Length; i += 4)
+            {
+                byte t = px[i]; px[i] = px[i + 2]; px[i + 2] = t;
+            }
+
+            uint[] id = new uint[1];
+            Native.glGenTextures(1, id);
+            Native.glBindTexture(Native.GL_TEXTURE_2D, id[0]);
+            Native.glTexParameteri(Native.GL_TEXTURE_2D, Native.GL_TEXTURE_MIN_FILTER, Native.GL_LINEAR);
+            Native.glTexParameteri(Native.GL_TEXTURE_2D, Native.GL_TEXTURE_MAG_FILTER, Native.GL_LINEAR);
+            Native.glTexParameteri(Native.GL_TEXTURE_2D, Native.GL_TEXTURE_WRAP_S, Native.GL_CLAMP);
+            Native.glTexParameteri(Native.GL_TEXTURE_2D, Native.GL_TEXTURE_WRAP_T, Native.GL_CLAMP);
+            GCHandle pin = GCHandle.Alloc(px, GCHandleType.Pinned);
+            try
+            {
+                Native.glTexImage2D(Native.GL_TEXTURE_2D, 0, Native.GL_RGBA, potW, potH, 0, Native.GL_RGBA,
+                    Native.GL_UNSIGNED_BYTE, pin.AddrOfPinnedObject());
+            }
+            finally { pin.Free(); }
+            return id[0];
+        }
+
+        // Tekstura: zaokraglony prostokat w x h (wypelnienie fill) z wysrodkowanym tekstem (kolor ink).
+        static uint MakeTexture(string text, bool semibold, float em, Color fill, Color ink,
+            int w, int h, float radius, int potW, int potH)
+        {
+            return BuildTexture(potW, potH, delegate(Graphics g)
+            {
+                using (System.Drawing.Drawing2D.GraphicsPath rr = RoundedRect(w, h, radius))
+                using (SolidBrush fb = new SolidBrush(fill))
+                    g.FillPath(fb, rr);
+
+                using (System.Drawing.Drawing2D.GraphicsPath tp = TextPath(text, semibold, em))
+                {
+                    RectangleF tb = tp.GetBounds();
+                    using (System.Drawing.Drawing2D.Matrix m = new System.Drawing.Drawing2D.Matrix())
+                    {
+                        m.Translate(w / 2f - (tb.Left + tb.Width / 2f), h / 2f - (tb.Top + tb.Height / 2f));
+                        tp.Transform(m);
+                    }
+                    using (SolidBrush ib = new SolidBrush(ink))
+                        g.FillPath(ib, tp);
+                }
+            });
+        }
+
+        // Podpowiedz: tekst w jednej linii, "D" i "ESC" pogrubione kursywa.
+        static readonly string[] HintRuns = new string[] { "Press ", "D", " to change view | Press ", "ESC", " to quit" };
+
+        // Zwraca teksture podpowiedzi i jej rozmiar (w, h w pikselach).
+        static uint MakeHintTexture(double k, bool dark, out int w, out int h, out int potW, out int potH)
+        {
+            Color fill, ink, capInk;
+            if (dark)
+            {
+                fill = Color.FromArgb(26, 255, 255, 255); ink = Color.FromArgb(191, 255, 255, 255);
+                capInk = Color.White;
+            }
+            else
+            {
+                fill = Color.FromArgb(15, 0, 0, 0); ink = Color.FromArgb(217, 0x30, 0x30, 0x30);
+                capInk = Color.FromArgb(0x20, 0x20, 0x20);
+            }
+
+            float em = (float)(12 * k);
+            float padX = (float)(8 * k), padY = (float)(4 * k), boxR = (float)(6 * k);
+
+            FontStyle style, capStyle;
+            FontFamily fam = OverlayFont(false, out style);
+            FontFamily capFam = OverlayFont(false, out capStyle);
+            capStyle |= FontStyle.Bold | FontStyle.Italic;
+            float lh = em * fam.GetLineSpacing(style) / fam.GetEmHeight(style);
+
+            StringFormat sf = new StringFormat(StringFormat.GenericTypographic);
+            sf.FormatFlags |= StringFormatFlags.MeasureTrailingSpaces;
+
+            float[] widths = new float[HintRuns.Length];
+            float total = 2 * padX;
+            using (Font f = new Font(fam, em, style, GraphicsUnit.Pixel))
+            using (Font cf = new Font(capFam, em, capStyle, GraphicsUnit.Pixel))
+            using (Bitmap scratch = new Bitmap(1, 1))
+            using (Graphics mg = Graphics.FromImage(scratch))
+            {
+                mg.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias;
+                for (int i = 0; i < HintRuns.Length; i++)
+                {
+                    bool key = (i & 1) == 1;
+                    float tw = mg.MeasureString(HintRuns[i], key ? cf : f, new PointF(0, 0), sf).Width;
+                    widths[i] = tw;
+                    total += widths[i];
+                }
+            }
+
+            int iw = (int)Math.Ceiling(total);
+            int ih = (int)Math.Ceiling(lh + 2 * padY);
+            w = iw; h = ih;
+            potW = NextPot(iw); potH = NextPot(ih);
+            float y0 = (ih - lh) / 2f;
+
+            return BuildTexture(potW, potH, delegate(Graphics g)
+            {
+                using (System.Drawing.Drawing2D.GraphicsPath rr = RoundedRect(iw, ih, boxR))
+                using (SolidBrush fb = new SolidBrush(fill))
+                    g.FillPath(fb, rr);
+
+                using (Font f = new Font(fam, em, style, GraphicsUnit.Pixel))
+                using (Font cf = new Font(capFam, em, capStyle, GraphicsUnit.Pixel))
+                using (SolidBrush ib = new SolidBrush(ink))
+                using (SolidBrush cib = new SolidBrush(capInk))
+                {
+                    float x = padX;
+                    for (int i = 0; i < HintRuns.Length; i++)
+                    {
+                        if ((i & 1) == 1)
+                        {
+                            g.DrawString(HintRuns[i], cf, cib, x, y0, sf);
+                        }
+                        else
+                        {
+                            g.DrawString(HintRuns[i], f, ib, x, y0, sf);
+                        }
+                        x += widths[i];
+                    }
+                }
+            });
+        }
+
+        void DeleteHint()
+        {
+            if (hintTex != 0)
+            {
+                Native.glDeleteTextures(1, new uint[] { hintTex });
+                hintTex = 0;
+            }
+        }
+
+        void DeleteOverlays()
+        {
+            uint[] two = new uint[] { indTex[0], indTex[1] };
+            Native.glDeleteTextures(2, two);
+            indTex[0] = 0; indTex[1] = 0;
+            DeleteHint();
+        }
+
+        void EnsureOverlays()
+        {
+            double k = 1.0;
+            using (Graphics g = CreateGraphics()) k = g.DpiX / 96.0;
+            if (indTex[0] != 0 && ovScale == k && ovDark == dark) return;
+            DeleteOverlays();
+            ovScale = k;
+            ovDark = dark;
+
+            Color fill2, ink2;
+            if (dark) { fill2 = Color.FromArgb(36, 255, 255, 255); ink2 = Color.FromArgb(235, 255, 255, 255); }
+            else { fill2 = Color.FromArgb(20, 0, 0, 0); ink2 = Color.FromArgb(0x30, 0x30, 0x30); }
+
+            try
+            {
+                indSize = (int)Math.Round(36 * k);
+                indPot = NextPot(indSize);
+                float r = (float)(6 * k);
+                indTex[0] = MakeTexture("2D", true, (float)(15 * k), fill2, ink2, indSize, indSize, r, indPot, indPot);
+                indTex[1] = MakeTexture("3D", true, (float)(15 * k), fill2, ink2, indSize, indSize, r, indPot, indPot);
+                if (!hintGone)
+                    hintTex = MakeHintTexture(k, dark, out hintW, out hintH, out hintPotW, out hintPotH);
+            }
+            catch (Exception)
+            {
+                DeleteOverlays();
+            }
+        }
+
+        // Podpowiedz znika po 10 s od pokazania okna (raz na uruchomienie): krotkie wygaszanie, potem
+        // timer jest zatrzymywany i usuwany, wiec nic juz nie tyka.
+        public void StartHintTimer()
+        {
+            hintTimer = new System.Windows.Forms.Timer();
+            hintTimer.Interval = 10000;
+            hintTimer.Tick += HintTick;
+            hintTimer.Start();
+        }
+
+        void HintTick(object sender, EventArgs e)
+        {
+            if (!hintFading)
+            {
+                hintFading = true;
+                hintFadeStart = Environment.TickCount;
+                hintTimer.Interval = 30;
+            }
+            double a = 1.0 - (Environment.TickCount - hintFadeStart) / 400.0;
+            if (a <= 0)
+            {
+                hintTimer.Stop();
+                hintTimer.Dispose();
+                hintTimer = null;
+                hintGone = true;
+                hintAlpha = 0f;
+                if (hrc != IntPtr.Zero)
+                {
+                    Native.wglMakeCurrent(hdc, hrc);
+                    DeleteHint();
+                }
+            }
+            else hintAlpha = (float)a;
+            Invalidate();
+        }
+
+        static void Quad(uint tex, float x, float y, int w, int h, int potW, int potH)
+        {
+            float u = (float)w / potW, v = (float)h / potH;
+            Native.glBindTexture(Native.GL_TEXTURE_2D, tex);
+            Native.glBegin(Native.GL_QUADS);
+            Native.glTexCoord2f(0, 0); Native.glVertex2f(x, y);
+            Native.glTexCoord2f(u, 0); Native.glVertex2f(x + w, y);
+            Native.glTexCoord2f(u, v); Native.glVertex2f(x + w, y + h);
+            Native.glTexCoord2f(0, v); Native.glVertex2f(x, y + h);
+            Native.glEnd();
+        }
+
+        void DrawOverlays(int w, int h)
+        {
+            EnsureOverlays();
+            uint tex = indTex[mode3D ? 1 : 0];
+            if (tex == 0) return;
+
+            float margin = (float)Math.Round(10 * ovScale);
+
+            Native.glPushAttrib(Native.GL_ENABLE_BIT | Native.GL_CURRENT_BIT | Native.GL_COLOR_BUFFER_BIT);
+            Native.glDisable(Native.GL_LIGHTING);
+            Native.glDisable(Native.GL_DEPTH_TEST);
+            Native.glEnable(Native.GL_TEXTURE_2D);
+            Native.glEnable(Native.GL_BLEND);
+            Native.glBlendFunc(Native.GL_SRC_ALPHA, Native.GL_ONE_MINUS_SRC_ALPHA);
+            Native.glMatrixMode(Native.GL_PROJECTION);
+            Native.glPushMatrix();
+            Native.glLoadIdentity();
+            Native.glOrtho(0, w, h, 0, -1, 1);
+            Native.glMatrixMode(Native.GL_MODELVIEW);
+            Native.glPushMatrix();
+            Native.glLoadIdentity();
+            Native.glColor4f(1f, 1f, 1f, 1f);
+
+            Quad(tex, margin, margin, indSize, indSize, indPot, indPot);
+            if (hintTex != 0 && w >= hintW + 2 * margin)
+            {
+                Native.glColor4f(1f, 1f, 1f, hintAlpha);
+                Quad(hintTex, margin, h - margin - hintH, hintW, hintH, hintPotW, hintPotH);
+            }
+
+            Native.glPopMatrix();
+            Native.glMatrixMode(Native.GL_PROJECTION);
+            Native.glPopMatrix();
+            Native.glMatrixMode(Native.GL_MODELVIEW);
+            Native.glPopAttrib();
         }
 
         protected override void OnMouseDown(MouseEventArgs e)

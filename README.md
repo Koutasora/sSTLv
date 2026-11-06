@@ -46,6 +46,12 @@ Dwukrotnie kliknij `odinstaluj.cmd` (albo użyj instalatora z Releases): usuwa w
 
 Brak innych klawiszy.
 
+## Wskaźnik trybu
+
+Mały półprzezroczysty kwadrat w lewym górnym rogu pokazuje bieżący tryb: "2D" albo "3D" (w obu trybach wygląda tak samo, zmienia się tylko napis). Tylko wyświetla, nie reaguje na mysz.
+
+W lewym dolnym rogu widoku jest półprzezroczysta podpowiedź "Press D to change view | Press ESC to quit" (D i ESC pogrubioną kursywą). Znika po 10 sekundach od uruchomienia (raz na start programu) i chowa się, gdy okno jest za wąskie.
+
 ## Mysz
 
 - Kółko: zoom do kursora (w 2D i w 3D).
