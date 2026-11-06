@@ -1,4 +1,4 @@
-# stl-podglad
+# sSTLv (Simple STL Viewer)
 
 Lekka przeglądarka plików STL dla Windows (jak prosta przeglądarka obrazów). C# 5 + WinForms + OpenGL 1.1,
 bez zewnętrznych bibliotek, exe ok. 20 KB. Rysuje tylko na zdarzenia (brak timerów i pętli), w spoczynku 0% CPU.
@@ -7,11 +7,25 @@ bez zewnętrznych bibliotek, exe ok. 20 KB. Rysuje tylko na zdarzenia (brak time
 
     build.cmd
 
-Wynik: `bin\stl-podglad.exe`. Wymaga tylko wbudowanego kompilatora .NET Framework (`csc.exe`).
+Wynik: `bin\sSTLv.exe`. Wymaga tylko wbudowanego kompilatora .NET Framework (`csc.exe`).
+
+## Instalacja
+
+Bez uprawnień administratora, tylko dla bieżącego użytkownika (HKCU):
+
+1. Dwukrotnie kliknij `instaluj.cmd` (w razie potrzeby sam zbuduje program). Kopiuje `sSTLv.exe` do
+   `%LOCALAPPDATA%\Programs\sSTLv` i rejestruje obsługę .stl ("Otwórz za pomocą", Aplikacje domyślne).
+2. Windows nie pozwala ustawić domyślnej aplikacji dla .stl po cichu: w otwartych Ustawieniach kliknij
+   "Ustaw domyślne" dla sSTLv.
+
+## Odinstalowanie
+
+Dwukrotnie kliknij `odinstaluj.cmd`: usuwa wpisy w rejestrze dodane przez instalator oraz folder
+`%LOCALAPPDATA%\Programs\sSTLv`. Wybór domyślnej aplikacji zapisany przez Windows (UserChoice) nie jest ruszany.
 
 ## Użycie
 
-- `stl-podglad.exe plik.stl` albo "Otwórz za pomocą"; można też przeciągnąć plik .stl na okno (drag & drop).
+- `sSTLv.exe plik.stl` albo "Otwórz za pomocą"; można też przeciągnąć plik .stl na okno (drag & drop).
 - Bez argumentu: puste okno.
 
 ## Klawisze

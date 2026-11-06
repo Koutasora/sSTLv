@@ -1,9 +1,11 @@
-# Checklista stl-podglad
+# Checklista sSTLv
 
 ## Sprawdzone kompilacją
 - [x] Okno WinForms + OpenGL 1.1 (P/Invoke), bez zewnętrznych bibliotek
 - [x] build.cmd (csc, C# 5), SetProcessDPIAware
 - [x] Pliki testowe (test\generuj.py)
+- [x] Nazwa sSTLv, wersja 1.0.0.0 (AssemblyInfo.cs)
+- [x] Skrypty instaluj / odinstaluj napisane (składnia sprawdzona parserem PowerShell)
 
 ## Sprawdzone w działaniu (AMD Radeon Vega 11, Windows 11, ciemny motyw)
 - [x] Rysowanie tylko na zdarzenia, 0% CPU w spoczynku (0 ms CPU w 10 s)
@@ -25,6 +27,8 @@
 - [x] Wygląd: światła, kontrast na ciemnym tle
 
 ## Do sprawdzenia w działaniu
+- [ ] instaluj.cmd: kopia do %LOCALAPPDATA%, wpisy HKCU, "Otwórz za pomocą", Aplikacje domyślne
+- [ ] odinstaluj.cmd usuwa tylko własne wpisy i folder
 - [ ] Jasny motyw (AppsUseLightTheme = 1)
 - [ ] Drag & drop pliku na okno
 - [ ] Plik nie-.stl z argumentu

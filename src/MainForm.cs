@@ -7,7 +7,7 @@ namespace StlPodglad
 {
     class MainForm : Form
     {
-        const string Nazwa = "stl-podglad";
+        const string Nazwa = "sSTLv";
 
         readonly GLView view = new GLView();
         List<string> files = new List<string>();
