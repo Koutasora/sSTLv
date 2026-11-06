@@ -1,7 +1,7 @@
 # sSTLv (Simple STL Viewer)
 
 Lekka przeglądarka plików STL dla Windows (jak prosta przeglądarka obrazów). C# 5 + WinForms + OpenGL 1.1,
-bez zewnętrznych bibliotek, exe ok. 31 KB (z ikoną). Rysuje tylko na zdarzenia (brak timerów i pętli), w spoczynku 0% CPU.
+bez zewnętrznych bibliotek, exe ok. 50 KB (z ikoną). Rysuje tylko na zdarzenia (brak timerów i pętli), w spoczynku 0% CPU.
 
 ## Budowanie
 
