@@ -39,6 +39,7 @@ Remove-Value 'Software\Classes\.stl\OpenWithProgids' $progId
 Remove-Tree 'Software\Classes\Applications\sSTLv.exe'
 Remove-Value 'Software\RegisteredApplications' 'sSTLv'
 Remove-Tree 'Software\sSTLv'
+Remove-Tree 'Software\Microsoft\Windows\CurrentVersion\Uninstall\sSTLv'
 
 # Domyslna wartosc .stl tylko jesli wskazuje na nas.
 $k = $hkcu.OpenSubKey('Software\Classes\.stl', $true)

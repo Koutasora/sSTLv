@@ -7,9 +7,19 @@ bez zewnętrznych bibliotek, exe ok. 50 KB (z ikoną). Rysuje tylko na zdarzenia
 
     build.cmd
 
-Wynik: `bin\sSTLv.exe`. Wymaga tylko wbudowanego kompilatora .NET Framework (`csc.exe`).
+Wynik: `bin\sSTLv.exe` oraz `bin\sSTLv-instalator.exe` (zawiera osadzone sSTLv.exe). Wymaga tylko wbudowanego kompilatora .NET Framework (`csc.exe`).
 
-## Instalacja
+## Pobieranie
+
+Z GitHub Releases:
+
+- `sSTLv-instalator.exe`: instaluje program dla bieżącego użytkownika (bez administratora). Odinstalowanie:
+  Ustawienia > Aplikacje > sSTLv (albo `sSTLv-instalator.exe /odinstaluj`).
+- `sSTLv-portable.exe`: wersja przenośna, wystarczy uruchomić, nic nie instaluje ani nie zapisuje.
+
+Pliki nie są podpisane, więc SmartScreen może ostrzec: "Więcej informacji" > "Uruchom mimo to".
+
+## Instalacja ze źródeł
 
 Bez uprawnień administratora, tylko dla bieżącego użytkownika (HKCU):
 
@@ -20,7 +30,7 @@ Bez uprawnień administratora, tylko dla bieżącego użytkownika (HKCU):
 
 ## Odinstalowanie
 
-Dwukrotnie kliknij `odinstaluj.cmd`: usuwa wpisy w rejestrze dodane przez instalator oraz folder
+Dwukrotnie kliknij `odinstaluj.cmd` (albo użyj instalatora z Releases): usuwa wpisy w rejestrze dodane przez instalator oraz folder
 `%LOCALAPPDATA%\Programs\sSTLv`. Wybór domyślnej aplikacji zapisany przez Windows (UserChoice) nie jest ruszany.
 
 ## Użycie
